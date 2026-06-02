@@ -58,7 +58,7 @@ button,input,select,textarea{font:inherit;}
 .ws-topbar{height:46px;background:var(--navy);display:flex;align-items:center;gap:10px;padding:0 16px;flex-shrink:0;z-index:100;}
 .ws-topbar-left{display:flex;align-items:center;gap:8px;}
 .ctx-lbl{font-size:11px;color:rgba(255,255,255,.5);flex-shrink:0;}
-.ctx-sel{height:28px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:var(--r-sm);color:#fff;font-size:12px;padding:0 8px;cursor:pointer;min-width:130px;max-width:200px;}
+.ctx-sel{height:28px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:var(--r-sm);color:#fff;font-size:12px;padding:0 8px;cursor:pointer;min-width:220px;max-width:360px;}
 .ctx-sel:focus{outline:none;border-color:rgba(255,255,255,.45);}
 .ctx-sel option{background:var(--navy);color:#fff;}
 .ws-topbar-right{display:flex;align-items:center;gap:8px;margin-left:auto;}

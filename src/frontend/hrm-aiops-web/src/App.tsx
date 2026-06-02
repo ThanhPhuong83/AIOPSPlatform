@@ -268,7 +268,7 @@ function Workspace({ engineer, onLogout, dark, onToggleDark, lang, setLang, t }:
             {customers.map(c => <option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}
           </select>
           <span className="ctx-lbl">{t('common.project')}</span>
-          <select className="ctx-sel" style={{ minWidth: 110 }} value={projectId} onChange={e => refreshAll(customerId, e.target.value)}>
+          <select className="ctx-sel" value={projectId} onChange={e => refreshAll(customerId, e.target.value)}>
             {projects.map(p => <option key={p.id} value={p.id}>{p.code} — {p.name}</option>)}
           </select>
         </div>
