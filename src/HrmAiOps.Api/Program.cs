@@ -70,22 +70,18 @@ app.Use(async (context, next) =>
 
         var actor = context.Request.Headers["X-User-Id"].FirstOrDefault();
 
-        // If this tenant has access grants configured, X-User-Id is required
-        var hasAccessGrants = store.TenantAccessGrants.Any(x =>
-            x.CustomerId == routeCustomerId && x.Status == TenantAccessStatus.Active);
-        if (hasAccessGrants && string.IsNullOrWhiteSpace(actor))
+        // Only block users who are explicitly Revoked or Suspended — new engineers have no grant yet and must be allowed
+        if (!string.IsNullOrWhiteSpace(actor))
         {
-            context.Response.StatusCode = StatusCodes.Status403Forbidden;
-            await context.Response.WriteAsJsonAsync(new { error = "X-User-Id header is required for this tenant." });
-            return;
-        }
-
-        // Verify actor has access when provided
-        if (!string.IsNullOrWhiteSpace(actor) && !HasTenantAccess(store, routeCustomerId, actor))
-        {
-            context.Response.StatusCode = StatusCodes.Status403Forbidden;
-            await context.Response.WriteAsJsonAsync(new { error = "User does not have tenant access." });
-            return;
+            var grant = store.TenantAccessGrants.FirstOrDefault(x =>
+                x.CustomerId == routeCustomerId &&
+                string.Equals(x.UserId, actor, StringComparison.OrdinalIgnoreCase));
+            if (grant is { Status: TenantAccessStatus.Revoked or TenantAccessStatus.Suspended })
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                await context.Response.WriteAsJsonAsync(new { error = "User access has been revoked for this tenant." });
+                return;
+            }
         }
     }
 
