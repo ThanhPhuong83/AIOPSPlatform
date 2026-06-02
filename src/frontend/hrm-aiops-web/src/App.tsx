@@ -1,7 +1,7 @@
 import {
-  Activity, AlertTriangle, Bot, CheckCircle2, FileText, GitCompare,
-  Layers3, Link2, LogOut, Play, Plus, RefreshCw, Rocket, Shield,
-  ShieldCheck, Users, Lock
+  Activity, AlertTriangle, Bot, Building2, CheckCircle2, ChevronDown,
+  FileText, GitCompare, Layers3, LogOut, Plus, RefreshCw, Rocket,
+  Shield, ShieldCheck, Users, Lock, Bell
 } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
@@ -13,12 +13,11 @@ import {
   ReleaseDraft, ReleaseReadinessReport, SnapshotDiff, TraceChain, UrsDocument
 } from './api';
 
-// ── Types ─────────────────────────────────────────────────────────
 type LoadState = 'idle' | 'loading' | 'error';
-type Tab = 'overview' | 'documents' | 'issues' | 'ai' | 'apply' | 'audit';
+type Tab = 'dashboard' | 'documents' | 'issues' | 'ai' | 'apply' | 'audit';
 type Engineer = { userId: string; name: string };
 
-// ── App root ──────────────────────────────────────────────────────
+// ── Root ──────────────────────────────────────────────────────────
 export function App() {
   const [engineer, setEngineer] = useState<Engineer | null>(null);
   if (!engineer) return <LoginPage onLogin={setEngineer} />;
@@ -27,51 +26,46 @@ export function App() {
 
 // ── Login ─────────────────────────────────────────────────────────
 function LoginPage({ onLogin }: { onLogin: (e: Engineer) => void }) {
-  const [error, setError] = useState('');
-
+  const [err, setErr] = useState('');
   function handle(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const name = String(fd.get('name') ?? '').trim();
     const pass = String(fd.get('password') ?? '').trim();
-    if (!name || !pass) { setError('Vui lòng nhập đầy đủ thông tin.'); return; }
+    if (!name || !pass) { setErr('Vui lòng nhập đầy đủ thông tin.'); return; }
     const userId = name.toLowerCase().replace(/\s+/g, '.');
     setCurrentUser(userId);
     onLogin({ userId, name });
   }
-
   return (
     <div className="login-bg">
       <div className="login-card">
         <div className="login-logo">
-          <div className="login-logo-mark">HR</div>
+          <div className="login-logo-mark">
+            <Building2 size={26} color="#fff" />
+          </div>
           <div>
-            <h1>HRM AI Ops</h1>
-            <p>Nền tảng vận hành HRM với AI</p>
+            <h1>HRM AI Ops Platform</h1>
+            <p>Nền tảng vận hành HRM tích hợp AI</p>
           </div>
         </div>
-
         <div className="login-heading">
-          <h2>Chào mừng trở lại</h2>
-          <p>Đăng nhập để tiếp tục quản lý khách hàng của bạn.</p>
+          <h2>Xin chào, Kỹ sư!</h2>
+          <p>Đăng nhập để truy cập hệ thống quản lý khách hàng của bạn.</p>
         </div>
-
         <form className="login-form" onSubmit={handle}>
           <div>
-            <label className="f-label" htmlFor="name">Tên kỹ sư</label>
-            <input id="name" name="name" placeholder="Nguyen Van A" autoFocus />
+            <label className="f-label">Tên kỹ sư</label>
+            <input name="name" placeholder="Nguyễn Văn A" autoFocus />
           </div>
           <div>
-            <label className="f-label" htmlFor="password">Mật khẩu</label>
-            <input id="password" name="password" type="password" placeholder="••••••••" />
+            <label className="f-label">Mật khẩu</label>
+            <input name="password" type="password" placeholder="••••••••" />
           </div>
-          {error && <p style={{ color: 'var(--danger)', fontSize: 12 }}>{error}</p>}
-          <button type="submit" className="login-btn">
-            <Lock size={15} /> Đăng nhập
-          </button>
+          {err && <p style={{ color: 'var(--danger)', fontSize: 12 }}>{err}</p>}
+          <button type="submit" className="login-btn"><Lock size={15} /> Đăng nhập</button>
         </form>
-
-        <p className="login-note">HRM AI Ops Platform v1 · Phase 1–17 Scaffold</p>
+        <p className="login-note">HRM AI Ops · v1.0 · Phase 1–17 Scaffold</p>
       </div>
     </div>
   );
@@ -79,7 +73,7 @@ function LoginPage({ onLogin }: { onLogin: (e: Engineer) => void }) {
 
 // ── Workspace ─────────────────────────────────────────────────────
 function Workspace({ engineer, onLogout }: { engineer: Engineer; onLogout: () => void }) {
-  const [tab, setTab] = useState<Tab>('overview');
+  const [tab, setTab] = useState<Tab>('dashboard');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [modules, setModules] = useState<HrmModule[]>([]);
@@ -109,10 +103,10 @@ function Workspace({ engineer, onLogout }: { engineer: Engineer; onLogout: () =>
   const [state, setState] = useState<LoadState>('idle');
   const [message, setMessage] = useState('');
 
-  const selectedCustomer = customers.find(x => x.id === customerId);
-  const selectedProject  = projects.find(x => x.id === projectId);
+  const selCustomer = customers.find(x => x.id === customerId);
+  const selProject  = projects.find(x => x.id === projectId);
 
-  async function refreshAll(nextCId = customerId, nextPId = projectId) {
+  async function refreshAll(cid = customerId, pid = projectId) {
     setState('loading');
     try {
       const [nc, nm] = await Promise.all([
@@ -121,42 +115,41 @@ function Workspace({ engineer, onLogout }: { engineer: Engineer; onLogout: () =>
       ]);
       setCustomers(nc); setModules(nm);
       setPromptTemplates(await api.get<PromptTemplate[]>('/api/ai/prompt-templates'));
+      const activeCid = cid || nc[0]?.id || '';
+      setCustomerId(activeCid);
+      if (!activeCid) { setState('idle'); return; }
 
-      const cid = nextCId || nc[0]?.id || '';
-      setCustomerId(cid);
-      if (!cid) { setState('idle'); return; }
-
-      const np = await api.getList<Project>(`/api/customers/${cid}/projects`);
+      const np = await api.getList<Project>(`/api/customers/${activeCid}/projects`);
       setProjects(np);
-      const pid = nextPId || np[0]?.id || '';
-      setProjectId(pid);
+      const activePid = pid || np[0]?.id || '';
+      setProjectId(activePid);
 
       const [na, nai] = await Promise.all([
-        api.getList<AuditLog>(`/api/customers/${cid}/audit-logs`),
-        api.getList<AiRun>(`/api/customers/${cid}/ai-runs`)
+        api.getList<AuditLog>(`/api/customers/${activeCid}/audit-logs`),
+        api.getList<AiRun>(`/api/customers/${activeCid}/ai-runs`)
       ]);
       setAudits(na); setAiRuns(nai);
 
-      if (pid) {
+      if (activePid) {
         const [nr, ne, nu, nb, ncf, ni, nfp, ntp, nrd, nco, nar, nsp, nsd, nrr, nrep, nso, ntc, nap] = await Promise.all([
-          api.getList<Requirement>(`/api/customers/${cid}/projects/${pid}/requirements`),
-          api.get<Environment[]>(`/api/customers/${cid}/projects/${pid}/environments`),
-          api.get<UrsDocument[]>(`/api/customers/${cid}/projects/${pid}/urs`),
-          api.get<Blueprint[]>(`/api/customers/${cid}/projects/${pid}/blueprints`),
-          api.get<ConfigSpec[]>(`/api/customers/${cid}/projects/${pid}/config-specs`),
-          api.getList<Issue>(`/api/customers/${cid}/projects/${pid}/issues`),
-          api.get<FixProposal[]>(`/api/customers/${cid}/projects/${pid}/fix-proposals`),
-          api.get<RegressionTestPlan[]>(`/api/customers/${cid}/projects/${pid}/regression-test-plans`),
-          api.get<ReleaseDraft[]>(`/api/customers/${cid}/projects/${pid}/release-drafts`),
-          api.get<CustomerConnector[]>(`/api/customers/${cid}/projects/${pid}/connectors`),
-          api.get<ApplyRun[]>(`/api/customers/${cid}/projects/${pid}/apply-runs`),
-          api.get<EnvironmentSnapshot[]>(`/api/customers/${cid}/projects/${pid}/environment-snapshots`),
-          api.get<SnapshotDiff[]>(`/api/customers/${cid}/projects/${pid}/snapshot-diffs`),
-          api.get<RegressionTestRun[]>(`/api/customers/${cid}/projects/${pid}/regression-test-runs`),
-          api.get<ReleaseReadinessReport[]>(`/api/customers/${cid}/projects/${pid}/release-readiness-reports`),
-          api.get<DocumentSignOff[]>(`/api/customers/${cid}/projects/${pid}/document-signoffs`),
-          api.get<TraceChain[]>(`/api/customers/${cid}/projects/${pid}/traceability/view`),
-          api.get<AiProposal[]>(`/api/customers/${cid}/projects/${pid}/ai-proposals`)
+          api.getList<Requirement>(`/api/customers/${activeCid}/projects/${activePid}/requirements`),
+          api.get<Environment[]>(`/api/customers/${activeCid}/projects/${activePid}/environments`),
+          api.get<UrsDocument[]>(`/api/customers/${activeCid}/projects/${activePid}/urs`),
+          api.get<Blueprint[]>(`/api/customers/${activeCid}/projects/${activePid}/blueprints`),
+          api.get<ConfigSpec[]>(`/api/customers/${activeCid}/projects/${activePid}/config-specs`),
+          api.getList<Issue>(`/api/customers/${activeCid}/projects/${activePid}/issues`),
+          api.get<FixProposal[]>(`/api/customers/${activeCid}/projects/${activePid}/fix-proposals`),
+          api.get<RegressionTestPlan[]>(`/api/customers/${activeCid}/projects/${activePid}/regression-test-plans`),
+          api.get<ReleaseDraft[]>(`/api/customers/${activeCid}/projects/${activePid}/release-drafts`),
+          api.get<CustomerConnector[]>(`/api/customers/${activeCid}/projects/${activePid}/connectors`),
+          api.get<ApplyRun[]>(`/api/customers/${activeCid}/projects/${activePid}/apply-runs`),
+          api.get<EnvironmentSnapshot[]>(`/api/customers/${activeCid}/projects/${activePid}/environment-snapshots`),
+          api.get<SnapshotDiff[]>(`/api/customers/${activeCid}/projects/${activePid}/snapshot-diffs`),
+          api.get<RegressionTestRun[]>(`/api/customers/${activeCid}/projects/${activePid}/regression-test-runs`),
+          api.get<ReleaseReadinessReport[]>(`/api/customers/${activeCid}/projects/${activePid}/release-readiness-reports`),
+          api.get<DocumentSignOff[]>(`/api/customers/${activeCid}/projects/${activePid}/document-signoffs`),
+          api.get<TraceChain[]>(`/api/customers/${activeCid}/projects/${activePid}/traceability/view`),
+          api.get<AiProposal[]>(`/api/customers/${activeCid}/projects/${activePid}/ai-proposals`)
         ]);
         setRequirements(nr); setEnvironments(ne); setUrs(nu); setBlueprints(nb);
         setConfigs(ncf); setIssues(ni); setFixProposals(nfp); setTestPlans(ntp);
@@ -191,176 +184,299 @@ function Workspace({ engineer, onLogout }: { engineer: Engineer; onLogout: () =>
     }), done);
   }
 
-  const pendingAi = aiProposals.filter(x => x.status === 'PendingReview').length;
-  const openIssues = issues.filter(x => x.status !== 'Closed' && x.status !== 'Cancelled').length;
+  const openIssues  = issues.filter(x => x.status !== 'Closed' && x.status !== 'Cancelled').length;
+  const pendingAi   = aiProposals.filter(x => x.status === 'PendingReview').length;
+  const approvedDocs = [...requirements, ...urs, ...blueprints, ...configs].filter(x => x.status === 'Approved').length;
 
-  const metrics = useMemo(() => [
-    { label: 'Requirements', value: requirements.length, icon: <FileText size={16} /> },
-    { label: 'URS', value: urs.length, icon: <FileText size={16} /> },
-    { label: 'Blueprints', value: blueprints.length, icon: <Layers3 size={16} /> },
-    { label: 'Config Specs', value: configs.length, icon: <ShieldCheck size={16} /> },
-    { label: 'Open Issues', value: openIssues, icon: <AlertTriangle size={16} />, cls: openIssues > 0 ? 'warn' : '' },
-    { label: 'Apply Runs', value: applyRuns.length, icon: <Rocket size={16} /> },
-    { label: 'Release Ready', value: readinessReports.filter(x => x.status === 'Ready').length, icon: <CheckCircle2 size={16} />, cls: 'success' },
-    { label: 'AI Proposals', value: aiProposals.length, icon: <Bot size={16} /> },
-    { label: 'Pending Review', value: pendingAi, icon: <Activity size={16} />, cls: pendingAi > 0 ? 'warn' : '' },
-    { label: 'Approved Docs', value: [...requirements, ...urs, ...blueprints, ...configs].filter(x => x.status === 'Approved').length, icon: <CheckCircle2 size={16} />, cls: 'success' },
-  ], [requirements, urs, blueprints, configs, issues, applyRuns, readinessReports, aiProposals]);
-
-  const tabs: { id: Tab; label: string; icon: React.ReactNode; badge?: number }[] = [
-    { id: 'overview',   label: 'Tổng quan',    icon: <Activity size={15} /> },
-    { id: 'documents',  label: 'Tài liệu',     icon: <FileText size={15} /> },
-    { id: 'issues',     label: 'Issues & Ops', icon: <AlertTriangle size={15} />, badge: openIssues || undefined },
-    { id: 'ai',         label: 'AI Ops',       icon: <Bot size={15} />,          badge: pendingAi || undefined },
-    { id: 'apply',      label: 'Apply & Test', icon: <Rocket size={15} /> },
-    { id: 'audit',      label: 'Audit',        icon: <Shield size={15} /> },
+  const navMain: { id: Tab; label: string; icon: React.ReactNode }[] = [
+    { id: 'dashboard', label: 'Dashboard',     icon: <Activity size={13} /> },
+    { id: 'documents', label: 'Tài liệu',      icon: <FileText size={13} /> },
+    { id: 'issues',    label: 'Issues & Ops',  icon: <AlertTriangle size={13} /> },
+    { id: 'ai',        label: 'AI Ops',         icon: <Bot size={13} /> },
+    { id: 'apply',     label: 'Apply & Test',   icon: <Rocket size={13} /> },
+    { id: 'audit',     label: 'Audit',          icon: <Shield size={13} /> },
   ];
+
+  const subNav: Record<Tab, string[]> = {
+    dashboard: ['Tổng quan', 'Tạo khách hàng', 'Tạo dự án'],
+    documents: ['Requirements', 'URS', 'Blueprints', 'Config Specs'],
+    issues:    ['Danh sách', 'Fix Proposals', 'Test Plans', 'Release Drafts'],
+    ai:        ['Đề xuất AI', 'AI Runs', 'Prompt Templates'],
+    apply:     ['Dry Run / Apply', 'Apply Runs', 'Regression', 'Snapshots'],
+    audit:     ['Traceability', 'Sign-offs', 'Audit Logs'],
+  };
+
+  const pageTitles: Record<Tab, [string, string]> = {
+    dashboard: ['Dashboard', `Dự liệu từ API · cập nhật ${new Date().toLocaleDateString('vi-VN')}`],
+    documents: ['Vòng đời tài liệu', 'REQ → URS → Blueprint → Config Spec'],
+    issues:    ['Issues & Vận hành', 'Quản lý sự cố · AI chẩn đoán · Fix proposals'],
+    ai:        ['AI Ops', 'Đề xuất AI · Lịch sử chạy · Prompt templates'],
+    apply:     ['Apply & Test', 'Controlled apply · Test/UAT only · Không apply production'],
+    audit:     ['Audit & Traceability', 'Sign-offs · Audit logs · Traceability chains'],
+  };
+
+  const [title, subtitle] = pageTitles[tab];
 
   return (
     <div className="ws-shell">
-      {/* Topbar */}
-      <header className="ws-topbar">
-        <div className="ws-brand">
-          <div className="ws-brand-mark">HR</div>
-          <span className="ws-brand-name">HRM AI Ops</span>
-        </div>
-        <div className="top-divider" />
-        <div className="ws-ctx">
-          <span className="ws-ctx-lbl">Khách hàng</span>
-          <select className="ws-ctx-sel" value={customerId} onChange={e => refreshAll(e.target.value, '')}>
-            {customers.map(c => <option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}
-          </select>
-          <span className="ws-ctx-lbl" style={{ marginLeft: 4 }}>Dự án</span>
-          <select className="ws-ctx-sel" value={projectId} onChange={e => refreshAll(customerId, e.target.value)}>
-            {projects.map(p => <option key={p.id} value={p.id}>{p.code} — {p.name}</option>)}
-          </select>
-        </div>
-        <div className="ws-topbar-right">
-          <div className={`ws-status-pill ${state}`}>
-            {state === 'loading' ? 'Đang tải...' : state === 'error' ? `Lỗi: ${message}` : message || 'Sẵn sàng'}
+      {/* ── Nav row 1 ── */}
+      <div className="nav1">
+        <div className="nav1-logo">
+          <div className="nav1-logo-mark">
+            <Building2 size={16} />
           </div>
-          <button className="ws-refresh" onClick={() => refreshAll()}>
-            <RefreshCw size={13} /> Làm mới
-          </button>
-          <div className="ws-user" onClick={onLogout} title="Đăng xuất">
-            <div className="ws-avatar">{engineer.name[0].toUpperCase()}</div>
-            <span>{engineer.name}</span>
-            <LogOut size={13} />
-          </div>
+          <span className="nav1-logo-name">HRM AI OPS</span>
         </div>
-      </header>
 
-      <div className="ws-body">
-        {/* Sidebar nav */}
-        <nav className="ws-nav">
-          <div className="ws-nav-section">Điều hướng</div>
-          {tabs.map(t => (
-            <button key={t.id} className={`ws-nav-item${tab === t.id ? ' active' : ''}`} onClick={() => setTab(t.id)}>
-              {t.icon} {t.label}
-              {t.badge ? <span className="nav-badge">{t.badge}</span> : null}
+        <div className="nav1-items">
+          {navMain.map(n => (
+            <button key={n.id} className={`nav1-item${tab === n.id ? ' active' : ''}`} onClick={() => setTab(n.id)}>
+              {n.icon}
+              <span>{n.label}</span>
+              {n.id === 'issues' && openIssues > 0 && <span className="badge-nav">{openIssues}</span>}
+              {n.id === 'ai'     && pendingAi > 0  && <span className="badge-nav">{pendingAi}</span>}
+              <ChevronDown size={11} style={{ opacity: .5 }} />
             </button>
           ))}
-          <div className="ws-nav-section" style={{ marginTop: 8 }}>Khách hàng</div>
-          <div style={{ padding: '4px 10px', fontSize: 12, color: '#64748b' }}>
-            {selectedCustomer?.name ?? '—'}
-          </div>
-          <div style={{ padding: '0 10px 4px', fontSize: 11, color: '#3b5068' }}>
-            {selectedProject?.name ?? '—'}
-          </div>
-        </nav>
+        </div>
 
-        {/* Content */}
-        <main className="ws-main">
-          {tab === 'overview' && (
-            <OverviewTab
-              metrics={metrics}
-              customers={customers} projects={projects} modules={modules}
-              customerId={customerId} projectId={projectId}
-              submit={submit} state={state}
-            />
-          )}
-          {tab === 'documents' && (
-            <DocumentsTab
-              requirements={requirements} urs={urs} blueprints={blueprints} configs={configs}
-              customerId={customerId} projectId={projectId}
-              submit={submit} signOff={signOff}
-            />
-          )}
-          {tab === 'issues' && (
-            <IssuesTab
-              issues={issues} fixProposals={fixProposals} testPlans={testPlans} releaseDrafts={releaseDrafts}
-              configs={configs}
-              customerId={customerId} projectId={projectId}
-              submit={submit}
-            />
-          )}
-          {tab === 'ai' && (
-            <AiTab
-              aiProposals={aiProposals} aiRuns={aiRuns} promptTemplates={promptTemplates}
-              customerId={customerId} projectId={projectId}
-              submit={submit}
-            />
-          )}
-          {tab === 'apply' && (
-            <ApplyTab
-              applyRuns={applyRuns} snapshots={snapshots} snapshotDiffs={snapshotDiffs}
-              regressionRuns={regressionRuns} readinessReports={readinessReports}
-              environments={environments} connectors={connectors} fixProposals={fixProposals}
-              customerId={customerId} projectId={projectId}
-              submit={submit}
-            />
-          )}
-          {tab === 'audit' && (
-            <AuditTab
-              audits={audits} signOffs={signOffs} traceChains={traceChains}
-            />
-          )}
-        </main>
+        <div className="nav1-right">
+          <select
+            className="ctx-sel"
+            value={customerId}
+            onChange={e => refreshAll(e.target.value, '')}
+          >
+            {customers.map(c => <option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}
+          </select>
+          <select
+            className="ctx-sel"
+            style={{ minWidth: 120 }}
+            value={projectId}
+            onChange={e => refreshAll(customerId, e.target.value)}
+          >
+            {projects.map(p => <option key={p.id} value={p.id}>{p.code}</option>)}
+          </select>
+          <div className="nav1-divider" />
+          <div className="nav1-user" onClick={onLogout} title="Đăng xuất">
+            <div className="nav1-avatar">{engineer.name[0].toUpperCase()}</div>
+            <span>{engineer.name}</span>
+            <LogOut size={12} style={{ opacity: .7 }} />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Nav row 2 ── */}
+      <div className="nav2">
+        {subNav[tab].map((s, i) => (
+          <button key={s} className={`nav2-item${i === 0 ? ' active' : ''}`}>{s}</button>
+        ))}
+        <div className="nav2-actions">
+          <div style={{ fontSize: 12, color: state === 'loading' ? '#60a5fa' : state === 'error' ? '#f87171' : '#6ee7b7', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: state === 'loading' ? '#60a5fa' : state === 'error' ? '#f87171' : '#4ade80', display: 'inline-block' }} />
+            {state === 'loading' ? 'Đang tải...' : state === 'error' ? 'Lỗi' : message || 'Sẵn sàng'}
+          </div>
+          <button className="btn-top btn-top-solid" onClick={() => refreshAll()}>
+            <RefreshCw size={12} /> Làm mới
+          </button>
+          <button className="btn-top btn-top-outline">
+            <Bell size={12} /> Thông báo
+          </button>
+        </div>
+      </div>
+
+      {/* ── Page header ── */}
+      <div className="page-hdr">
+        <div className="page-hdr-left">
+          <h2>{title}</h2>
+          <p>{subtitle} · <strong>{selCustomer?.name ?? '—'}</strong> / {selProject?.name ?? '—'}</p>
+        </div>
+      </div>
+
+      {/* ── Content ── */}
+      <div className="ws-content">
+        {tab === 'dashboard' && (
+          <DashboardTab
+            engineer={engineer}
+            selCustomer={selCustomer} selProject={selProject}
+            requirements={requirements} urs={urs} blueprints={blueprints}
+            configs={configs} issues={issues} applyRuns={applyRuns}
+            readinessReports={readinessReports} aiProposals={aiProposals}
+            audits={audits} modules={modules}
+            customers={customers} projects={projects}
+            customerId={customerId} projectId={projectId}
+            openIssues={openIssues} pendingAi={pendingAi} approvedDocs={approvedDocs}
+            submit={submit}
+          />
+        )}
+        {tab === 'documents' && (
+          <DocumentsTab
+            requirements={requirements} urs={urs} blueprints={blueprints} configs={configs}
+            customerId={customerId} projectId={projectId}
+            submit={submit} signOff={signOff}
+          />
+        )}
+        {tab === 'issues' && (
+          <IssuesTab
+            issues={issues} fixProposals={fixProposals} testPlans={testPlans}
+            releaseDrafts={releaseDrafts} configs={configs}
+            customerId={customerId} projectId={projectId} submit={submit}
+          />
+        )}
+        {tab === 'ai' && (
+          <AiTab
+            aiProposals={aiProposals} aiRuns={aiRuns} promptTemplates={promptTemplates}
+            customerId={customerId} projectId={projectId} submit={submit}
+          />
+        )}
+        {tab === 'apply' && (
+          <ApplyTab
+            applyRuns={applyRuns} snapshots={snapshots} snapshotDiffs={snapshotDiffs}
+            regressionRuns={regressionRuns} readinessReports={readinessReports}
+            environments={environments} connectors={connectors} fixProposals={fixProposals}
+            customerId={customerId} projectId={projectId} submit={submit}
+          />
+        )}
+        {tab === 'audit' && (
+          <AuditTab audits={audits} signOffs={signOffs} traceChains={traceChains} />
+        )}
       </div>
     </div>
   );
 }
 
-// ── Overview Tab ──────────────────────────────────────────────────
-function OverviewTab({ metrics, customers, projects, modules, customerId, projectId, submit, state }: any) {
+// ── Dashboard Tab ─────────────────────────────────────────────────
+function DashboardTab({ engineer, selCustomer, selProject, requirements, urs, blueprints, configs, issues, applyRuns, readinessReports, aiProposals, audits, modules, customers, projects, customerId, projectId, openIssues, pendingAi, approvedDocs, submit }: any) {
+  const totalDocs = requirements.length + urs.length + blueprints.length + configs.length;
+  const closedIssues = issues.filter((i: Issue) => i.status === 'Closed').length;
+
   return (
     <>
-      <div>
-        <p className="page-title">Tổng quan</p>
-        <p className="page-sub">Snapshot hiện tại của dự án đang chọn</p>
-      </div>
-
-      <div className="metric-grid">
-        {metrics.map((m: any) => (
-          <div key={m.label} className={`mc ${m.cls ?? ''}`}>
-            {m.icon}
-            <div className="mc-label">{m.label}</div>
-            <div className="mc-value">{m.value}</div>
+      {/* Welcome + summary */}
+      <div className="welcome-row">
+        <div className="welcome-card">
+          <div className="welcome-icon">
+            <Building2 size={36} color="rgba(255,255,255,.9)" />
           </div>
-        ))}
+          <div className="welcome-text">
+            <h3>Xin chào {engineer.name}.</h3>
+            <p>
+              Bạn đang xem dữ liệu tổng quan về dự án{' '}
+              <strong>{selProject?.name ?? '...'}</strong> tại{' '}
+              <strong>{selCustomer?.name ?? '...'}</strong>.
+            </p>
+          </div>
+        </div>
+        <div className="summary-card">
+          <h4>Tổng số tài liệu</h4>
+          <div className="summary-big">{totalDocs}</div>
+          <div className="reminder-list">
+            {[
+              { label: 'Requirements', val: requirements.length, color: '#22c55e' },
+              { label: 'URS Documents', val: urs.length, color: '#3b82f6' },
+              { label: 'Blueprints', val: blueprints.length, color: '#8b5cf6' },
+              { label: 'Config Specs', val: configs.length, color: '#f59e0b' },
+            ].map(r => (
+              <div className="summary-row" key={r.label}>
+                <div className="summary-row-dot">
+                  <div className="dot" style={{ background: r.color }} />
+                  {r.label}
+                </div>
+                <div className="summary-row-val" style={{ color: r.color }}>{r.val}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <div className="g2">
-        <Card title="Tạo khách hàng / dự án" icon={<Users size={15} />}>
-          <SmartForm
-            fields={[['code','Code','ACME'],['name','Tên','ACME HR'],['industry','Ngành','Manufacturing']]}
-            submitLabel="Khách hàng"
-            onSubmit={b => submit(() => api.post('/api/customers', b), 'Đã tạo khách hàng')}
-          />
-          <SmartForm
-            disabled={!customerId}
-            fields={[['code','Code','HRM-OPS'],['name','Tên','HRM Operations'],['hrmProductName','Sản phẩm HRM','Custom HRM']]}
-            submitLabel="Dự án"
-            onSubmit={b => submit(() => api.post(`/api/customers/${customerId}/projects`, b), 'Đã tạo dự án')}
-          />
+      {/* Stat cards */}
+      <div className="stat-grid">
+        <StatCard color="green" label="Tài liệu đã duyệt" period="Tất cả" value={approvedDocs}
+          trend={approvedDocs > 0 ? `${approvedDocs}/${totalDocs} docs` : '0'} up={true} prev={`Tổng: ${totalDocs}`} />
+        <StatCard color="yellow" label="Issues đang mở" period="Hiện tại" value={openIssues}
+          trend={openIssues > 0 ? `${openIssues} chưa xử lý` : 'Tốt!'} up={false} prev={`Đã đóng: ${closedIssues}`} />
+        <StatCard color="blue" label="AI Proposals" period="Tất cả" value={aiProposals.length}
+          trend={`${pendingAi} chờ duyệt`} up={pendingAi === 0} prev={`Đã chấp nhận: ${aiProposals.filter((a: AiProposal) => a.status === 'Accepted').length}`} />
+        <StatCard color="purple" label="Apply Runs" period="Tất cả" value={applyRuns.length}
+          trend={`${readinessReports.filter((r: ReleaseReadinessReport) => r.status === 'Ready').length} release ready`} up={true} prev="Test/UAT only" />
+        <StatCard color="orange" label="AI Runs" period="Tất cả" value={aiProposals.length}
+          trend={`Provider: LocalStub`} up={true} prev="Đã mask context" />
+        <StatCard color="red" label="Audit Logs" period="Tất cả" value={audits.length}
+          trend="Toàn bộ actions" up={true} prev="Realtime tracking" />
+      </div>
+
+      {/* Content grid */}
+      <div className="g3">
+        {/* HRM Modules */}
+        <Card title="HRM Modules" sub="Mức độ rủi ro mặc định" icon={<ShieldCheck size={14} />}>
+          <div className="reminder-list">
+            {modules.map((m: HrmModule) => (
+              <div className="reminder-row" key={m.id}>
+                <span className="reminder-label">{m.name}</span>
+                <span className={`reminder-val ${m.defaultRiskLevel === 'Critical' ? 'danger' : m.defaultRiskLevel === 'High' ? 'warn' : ''}`}>
+                  {m.defaultRiskLevel}
+                </span>
+              </div>
+            ))}
+            {modules.length === 0 && <div className="empty-msg">Chưa có dữ liệu</div>}
+          </div>
         </Card>
 
-        <Card title="HRM Modules" icon={<ShieldCheck size={15} />}>
-          <ItemList empty="Chưa có module" items={modules.map((m: HrmModule) => ({
-            key: m.id,
-            title: `${m.code} — ${m.name}`,
-            meta: `Mức rủi ro mặc định: ${m.defaultRiskLevel} · ${m.description}`,
-            badge: riskBadge(m.defaultRiskLevel)
+        {/* Recent issues */}
+        <Card title="Issues gần đây" sub="Top 5 mới nhất" icon={<AlertTriangle size={14} />} link="Xem chi tiết >>">
+          <div className="reminder-list">
+            {issues.slice(0, 5).map((i: Issue) => (
+              <div className="reminder-row" key={i.id}>
+                <span className="reminder-label" style={{ fontSize: 12 }}>{i.issueNo} — {truncate(i.title, 30)}</span>
+                {issueBadge(i.status)}
+              </div>
+            ))}
+            {issues.length === 0 && <div className="empty-msg">Không có issue</div>}
+          </div>
+        </Card>
+
+        {/* Reminders / AI pending */}
+        <Card title="Nhắc việc" sub="Cần xử lý" icon={<Bell size={14} />} link="Xem chi tiết >>">
+          <div className="reminder-list">
+            {[
+              { label: 'AI chờ duyệt', val: pendingAi, cls: pendingAi > 0 ? 'warn' : '' },
+              { label: 'Issues đang mở', val: openIssues, cls: openIssues > 0 ? 'warn' : '' },
+              { label: 'Docs chưa ký', val: [...requirements, ...urs, ...blueprints, ...configs].filter((d: any) => d.status === 'Draft').length, cls: '' },
+              { label: 'Apply runs pending', val: applyRuns.filter((a: ApplyRun) => a.status === 'DryRunSucceeded').length, cls: '' },
+              { label: 'Release ready', val: readinessReports.filter((r: ReleaseReadinessReport) => r.status === 'Ready').length, cls: 'success' },
+              { label: 'Audit logs hôm nay', val: audits.length, cls: '' },
+            ].map(r => (
+              <div className="reminder-row" key={r.label}>
+                <span className="reminder-label">{r.label}</span>
+                <span className={`reminder-val ${r.cls}`}>{r.val}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* Quick create */}
+      <div className="g2">
+        <Card title="Thêm khách hàng mới" sub="" icon={<Users size={14} />}>
+          <SmartForm
+            fields={[['code','Code','ACME'],['name','Tên KH','ACME HR Co.'],['industry','Ngành','Manufacturing']]}
+            submitLabel="Tạo khách hàng"
+            onSubmit={b => submit(() => api.post('/api/customers', b), 'Đã tạo khách hàng')}
+          />
+          <ItemList empty="Khách hàng:" items={customers.slice(0, 3).map((c: Customer) => ({
+            key: c.id, title: c.name, meta: `${c.code} · ${c.industry ?? 'Chưa rõ ngành'}`,
+            badge: <span className="badge b-blue">{c.status}</span>
+          }))} />
+        </Card>
+        <Card title="Thêm dự án mới" sub="" icon={<FileText size={14} />}>
+          <SmartForm
+            disabled={!customerId}
+            fields={[['code','Code','HRM-OPS'],['name','Tên dự án','HRM Operations'],['hrmProductName','Sản phẩm HRM','Custom HRM']]}
+            submitLabel="Tạo dự án"
+            onSubmit={b => submit(() => api.post(`/api/customers/${customerId}/projects`, b), 'Đã tạo dự án')}
+          />
+          <ItemList empty="Dự án:" items={projects.slice(0, 3).map((p: Project) => ({
+            key: p.id, title: p.name, meta: `${p.code} · ${p.hrmProductName ?? ''}`,
+            badge: <span className="badge b-green">{p.status}</span>
           }))} />
         </Card>
       </div>
@@ -372,10 +488,8 @@ function OverviewTab({ metrics, customers, projects, modules, customerId, projec
 function DocumentsTab({ requirements, urs, blueprints, configs, customerId, projectId, submit, signOff }: any) {
   return (
     <>
-      <div><p className="page-title">Vòng đời tài liệu</p><p className="page-sub">REQ → URS → Blueprint → Config Spec</p></div>
-
       <div className="g2">
-        <Card title="Yêu cầu (Requirements)" icon={<FileText size={15} />} count={requirements.length}>
+        <Card title="Requirements" sub={`${requirements.length} yêu cầu`} icon={<FileText size={14} />}>
           <form className="f-stack" onSubmit={e => {
             e.preventDefault();
             const fd = new FormData(e.currentTarget);
@@ -384,41 +498,38 @@ function DocumentsTab({ requirements, urs, blueprints, configs, customerId, proj
             }), 'Đã tạo requirement');
             (e.target as HTMLFormElement).reset();
           }}>
-            <input name="title" placeholder="Tiêu đề requirement" required disabled={!projectId} />
+            <input name="title" placeholder="Tiêu đề requirement..." required disabled={!projectId} />
             <textarea name="contentText" placeholder="Mô tả nội dung..." disabled={!projectId} />
-            <button disabled={!projectId} className="btn btn-primary"><Plus size={13} /> Thêm Requirement</button>
+            <button className="btn btn-navy" disabled={!projectId}><Plus size={13} /> Thêm Requirement</button>
           </form>
           <ItemList empty="Chưa có requirement" items={requirements.map((r: Requirement) => ({
-            key: r.id,
-            title: `${r.requirementNo} v${r.version} — ${r.title}`,
+            key: r.id, title: `${r.requirementNo} v${r.version} — ${r.title}`,
             meta: `${r.status}${r.isLatest ? '' : ' · cũ'}`,
             badge: statusBadge(r.status),
             actions: (
               <div className="item-actions">
-                <button className="btn" onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/requirements/${r.id}/generate-urs`), 'Đề xuất URS đã tạo')}>
-                  <Bot size={12} /> Gen URS
+                <button className="btn btn-sm" onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/requirements/${r.id}/generate-urs`), 'Đã tạo URS proposal')}>
+                  <Bot size={11} /> Gen URS
                 </button>
-                <button className="btn" disabled={r.status === 'Approved'} onClick={() => signOff('requirements', r.id, 'Requirement đã ký')}>
-                  <CheckCircle2 size={12} /> Ký
+                <button className="btn btn-sm" disabled={r.status === 'Approved'} onClick={() => signOff('requirements', r.id, 'Requirement đã ký')}>
+                  <CheckCircle2 size={11} /> Ký
                 </button>
               </div>
             )
           }))} />
         </Card>
 
-        <Card title="URS" icon={<Bot size={15} />} count={urs.length}>
+        <Card title="URS Documents" sub={`${urs.length} tài liệu`} icon={<Bot size={14} />}>
           <ItemList empty="Chưa có URS" items={urs.map((u: UrsDocument) => ({
-            key: u.id,
-            title: `${u.ursNo} v${u.version} — ${u.title}`,
-            meta: trim(u.content),
-            badge: statusBadge(u.status),
+            key: u.id, title: `${u.ursNo} v${u.version} — ${u.title}`,
+            meta: truncate(u.content), badge: statusBadge(u.status),
             actions: (
               <div className="item-actions">
-                <button className="btn" onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/urs/${u.id}/generate-blueprint`), 'Đề xuất Blueprint đã tạo')}>
-                  <Bot size={12} /> Gen BP
+                <button className="btn btn-sm" onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/urs/${u.id}/generate-blueprint`), 'Đã tạo Blueprint proposal')}>
+                  <Bot size={11} /> Gen BP
                 </button>
-                <button className="btn" disabled={u.status === 'Approved'} onClick={() => signOff('urs', u.id, 'URS đã ký')}>
-                  <CheckCircle2 size={12} /> Ký
+                <button className="btn btn-sm" disabled={u.status === 'Approved'} onClick={() => signOff('urs', u.id, 'URS đã ký')}>
+                  <CheckCircle2 size={11} /> Ký
                 </button>
               </div>
             )
@@ -427,36 +538,32 @@ function DocumentsTab({ requirements, urs, blueprints, configs, customerId, proj
       </div>
 
       <div className="g2">
-        <Card title="Blueprints" icon={<Layers3 size={15} />} count={blueprints.length}>
+        <Card title="Blueprints" sub={`${blueprints.length} blueprint`} icon={<Layers3 size={14} />}>
           <ItemList empty="Chưa có blueprint" items={blueprints.map((b: Blueprint) => ({
-            key: b.id,
-            title: `${b.blueprintNo} v${b.version} — ${b.type}`,
-            meta: trim(b.content),
-            badge: statusBadge(b.status),
+            key: b.id, title: `${b.blueprintNo} v${b.version} — ${b.type}`,
+            meta: truncate(b.content), badge: statusBadge(b.status),
             actions: (
               <div className="item-actions">
-                <button className="btn" onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/blueprints/${b.id}/generate-config-spec`, { moduleName: 'Leave Management' }), 'Đề xuất Config Spec đã tạo')}>
-                  <Bot size={12} /> Gen CFG
+                <button className="btn btn-sm" onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/blueprints/${b.id}/generate-config-spec`, { moduleName: 'Leave Management' }), 'Đã tạo Config Spec proposal')}>
+                  <Bot size={11} /> Gen CFG
                 </button>
-                <button className="btn" disabled={b.status === 'Approved'} onClick={() => signOff('blueprints', b.id, 'Blueprint đã ký')}>
-                  <CheckCircle2 size={12} /> Ký
+                <button className="btn btn-sm" disabled={b.status === 'Approved'} onClick={() => signOff('blueprints', b.id, 'Blueprint đã ký')}>
+                  <CheckCircle2 size={11} /> Ký
                 </button>
               </div>
             )
           }))} />
         </Card>
 
-        <Card title="Config Specifications" icon={<ShieldCheck size={15} />} count={configs.length}>
+        <Card title="Config Specifications" sub={`${configs.length} config`} icon={<ShieldCheck size={14} />}>
           <ItemList empty="Chưa có config spec" items={configs.map((c: ConfigSpec) => ({
-            key: c.id,
-            title: `${c.configNo} v${c.version} — ${c.moduleName}`,
-            meta: `${trim(c.content)}`,
-            badge: riskBadge(c.riskLevel),
+            key: c.id, title: `${c.configNo} v${c.version} — ${c.moduleName}`,
+            meta: truncate(c.content), badge: riskBadge(c.riskLevel),
             actions: (
               <div className="item-actions">
-                <span className="badge">{statusBadge(c.status)}</span>
-                <button className="btn" disabled={c.status === 'Approved'} onClick={() => signOff('config-specs', c.id, 'Config spec đã ký')}>
-                  <CheckCircle2 size={12} /> Ký
+                {statusBadge(c.status)}
+                <button className="btn btn-sm" disabled={c.status === 'Approved'} onClick={() => signOff('config-specs', c.id, 'Config spec đã ký')}>
+                  <CheckCircle2 size={11} /> Ký
                 </button>
               </div>
             )
@@ -471,78 +578,64 @@ function DocumentsTab({ requirements, urs, blueprints, configs, customerId, proj
 function IssuesTab({ issues, fixProposals, testPlans, releaseDrafts, configs, customerId, projectId, submit }: any) {
   return (
     <>
-      <div><p className="page-title">Issues & Vận hành</p><p className="page-sub">Quản lý sự cố + AI chẩn đoán</p></div>
-
       <div className="g2">
-        <Card title="Tạo Issue" icon={<AlertTriangle size={15} />}>
+        <Card title="Tạo Issue mới" sub="Báo cáo sự cố vận hành" icon={<AlertTriangle size={14} />}>
           <form className="f-stack" onSubmit={e => {
             e.preventDefault();
             const fd = new FormData(e.currentTarget);
-            const cid2 = String(fd.get('linkedConfigId') ?? '');
+            const lc = String(fd.get('linkedConfigId') ?? '');
             submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/issues`, {
               environmentId: null,
-              linkedEntityType: cid2 ? 'ConfigSpec' : null,
-              linkedEntityId: cid2 || null,
-              title: fd.get('title'),
-              description: fd.get('description'),
-              category: fd.get('category') || null,
-              severity: fd.get('severity'),
-              priority: fd.get('priority'),
-              reportedBy: fd.get('reportedBy') || 'customer.hr'
+              linkedEntityType: lc ? 'ConfigSpec' : null, linkedEntityId: lc || null,
+              title: fd.get('title'), description: fd.get('description'),
+              category: fd.get('category') || null, severity: fd.get('severity'),
+              priority: fd.get('priority'), reportedBy: fd.get('reportedBy') || 'customer.hr'
             }), 'Đã tạo issue');
             (e.target as HTMLFormElement).reset();
           }}>
-            <input name="title" placeholder="Tiêu đề issue" required disabled={!projectId} />
-            <textarea name="description" placeholder="Mô tả chi tiết..." disabled={!projectId} />
+            <input name="title" placeholder="Tiêu đề issue..." required disabled={!projectId} />
+            <textarea name="description" placeholder="Mô tả chi tiết sự cố..." disabled={!projectId} />
             <div className="f-row3">
-              <select name="category" defaultValue="" disabled={!projectId}>
-                <option value="">Tự phân loại</option>
-                <option>Functional</option><option>Configuration</option>
-                <option>Data</option><option>Integration</option>
-                <option>Security</option><option>Permission</option>
-                <option>Payroll</option><option>Performance</option>
-                <option>ProductionDatabase</option><option>Other</option>
-              </select>
               <select name="severity" defaultValue="High" disabled={!projectId}>
-                <option>Low</option><option>Medium</option>
-                <option>High</option><option>Critical</option>
+                <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
               </select>
               <select name="priority" defaultValue="P2" disabled={!projectId}>
-                <option value="P0">P0 — Critical</option>
-                <option value="P1">P1 — High</option>
-                <option value="P2">P2 — Medium</option>
-                <option value="P3">P3 — Low</option>
+                <option value="P0">P0 — Critical</option><option value="P1">P1 — High</option>
+                <option value="P2">P2 — Medium</option><option value="P3">P3 — Low</option>
                 <option value="P4">P4 — Minimal</option>
+              </select>
+              <select name="category" defaultValue="" disabled={!projectId}>
+                <option value="">Tự phân loại</option>
+                <option>Functional</option><option>Configuration</option><option>Data</option>
+                <option>Integration</option><option>Security</option><option>Permission</option>
+                <option>Payroll</option><option>Performance</option><option>Other</option>
               </select>
             </div>
             <div className="f-row">
               <input name="reportedBy" placeholder="Người báo cáo" defaultValue="customer.hr" disabled={!projectId} />
               <select name="linkedConfigId" defaultValue="" disabled={!projectId}>
-                <option value="">Không liên kết config</option>
-                {configs.map((c: ConfigSpec) => <option key={c.id} value={c.id}>{c.configNo} - {c.moduleName}</option>)}
+                <option value="">Không liên kết</option>
+                {configs.map((c: ConfigSpec) => <option key={c.id} value={c.id}>{c.configNo} — {c.moduleName}</option>)}
               </select>
             </div>
-            <button className="btn btn-primary" disabled={!projectId}><Plus size={13} /> Tạo Issue</button>
+            <button className="btn btn-navy" disabled={!projectId}><Plus size={13} /> Tạo Issue</button>
           </form>
         </Card>
 
-        <Card title="Danh sách Issues" icon={<AlertTriangle size={15} />} count={issues.length}>
-          <ItemList empty="Chưa có issue" items={issues.map((i: Issue) => ({
+        <Card title="Danh sách Issues" sub={`${issues.length} issue`} icon={<AlertTriangle size={14} />}>
+          <ItemList empty="Không có issue nào" items={issues.map((i: Issue) => ({
             key: i.id,
             title: `${i.issueNo} — ${i.title}`,
-            meta: `${i.category} · ${i.severity} · ${i.priority} · ${trim(i.rootCauseSummary ?? i.description)}`,
+            meta: `${i.category} · ${i.severity} · ${i.priority} · ${truncate(i.rootCauseSummary ?? i.description, 60)}`,
             badge: issueBadge(i.status),
             actions: (
               <div className="item-actions">
-                <button className="btn" disabled={i.status === 'Closed'} onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/issues/${i.id}/classify`), 'Phân loại AI xong')}>
-                  <Bot size={11} /> Classify
-                </button>
-                <button className="btn" disabled={i.status === 'Closed'} onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/issues/${i.id}/root-cause`), 'RCA xong')}>RCA</button>
-                <button className="btn" disabled={i.status === 'Closed'} onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/issues/${i.id}/fix-proposal`), 'Fix proposal xong')}>Fix</button>
-                <button className="btn" disabled={i.status === 'Closed'} onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/issues/${i.id}/change-request-draft`), 'CR draft xong')}>CR</button>
-                <button className="btn" disabled={i.status === 'Closed'} onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/issues/${i.id}/regression-test-plan`), 'Test plan xong')}>Test</button>
-                <button className="btn" disabled={i.status === 'Closed'} onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/issues/${i.id}/release-draft`), 'Release draft xong')}>Release</button>
-                <button className="btn btn-danger" disabled={i.status === 'Closed'} onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/issues/${i.id}/close`, { closedBy: 'support.lead', resolutionNote: 'Resolved.' }), 'Issue đã đóng')}>Đóng</button>
+                <button className="btn btn-sm" disabled={i.status === 'Closed'} onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/issues/${i.id}/classify`), 'Classify xong')}><Bot size={10} /> Classify</button>
+                <button className="btn btn-sm" disabled={i.status === 'Closed'} onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/issues/${i.id}/root-cause`), 'RCA xong')}>RCA</button>
+                <button className="btn btn-sm" disabled={i.status === 'Closed'} onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/issues/${i.id}/fix-proposal`), 'Fix proposal xong')}>Fix</button>
+                <button className="btn btn-sm" disabled={i.status === 'Closed'} onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/issues/${i.id}/change-request-draft`), 'CR xong')}>CR</button>
+                <button className="btn btn-sm" disabled={i.status === 'Closed'} onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/issues/${i.id}/regression-test-plan`), 'Test plan xong')}>Test</button>
+                <button className="btn btn-sm btn-danger" disabled={i.status === 'Closed'} onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/issues/${i.id}/close`, { closedBy: 'support.lead', resolutionNote: 'Resolved.' }), 'Đã đóng')}>Đóng</button>
               </div>
             )
           }))} />
@@ -550,20 +643,17 @@ function IssuesTab({ issues, fixProposals, testPlans, releaseDrafts, configs, cu
       </div>
 
       <div className="g2">
-        <Card title="Fix Proposals" icon={<Rocket size={15} />} count={fixProposals.length}>
+        <Card title="Fix Proposals" sub={`${fixProposals.length} đề xuất`} icon={<Rocket size={14} />}>
           <ItemList empty="Chưa có fix proposal" items={fixProposals.slice(0, 6).map((f: FixProposal) => ({
-            key: f.id,
-            title: f.title,
-            meta: trim(f.proposedSolution),
-            badge: riskBadge(f.riskLevel)
+            key: f.id, title: f.title, meta: truncate(f.proposedSolution), badge: riskBadge(f.riskLevel)
           }))} />
         </Card>
-        <Card title="Test Plans & Release Drafts" icon={<GitCompare size={15} />}>
+        <Card title="Test Plans & Release Drafts" icon={<GitCompare size={14} />}>
           <ItemList empty="Chưa có test plan" items={testPlans.slice(0, 4).map((t: RegressionTestPlan) => ({
-            key: t.id, title: `${t.testPlanNo} — ${t.title}`, meta: trim(t.content), badge: riskBadge(t.riskLevel)
+            key: t.id, title: `${t.testPlanNo} — ${t.title}`, meta: truncate(t.content), badge: riskBadge(t.riskLevel)
           }))} />
           <ItemList empty="Chưa có release draft" items={releaseDrafts.slice(0, 4).map((r: ReleaseDraft) => ({
-            key: r.id, title: `${r.releaseDraftNo} — ${r.title}`, meta: trim(r.releaseNotes), badge: riskBadge(r.riskLevel)
+            key: r.id, title: `${r.releaseDraftNo} — ${r.title}`, meta: truncate(r.releaseNotes), badge: riskBadge(r.riskLevel)
           }))} />
         </Card>
       </div>
@@ -575,20 +665,16 @@ function IssuesTab({ issues, fixProposals, testPlans, releaseDrafts, configs, cu
 function AiTab({ aiProposals, aiRuns, promptTemplates, customerId, projectId, submit }: any) {
   return (
     <>
-      <div><p className="page-title">AI Ops</p><p className="page-sub">Đề xuất AI + Lịch sử chạy + Prompt templates</p></div>
-
-      <Card title="Đề xuất AI — Cần xem xét" icon={<Bot size={15} />} count={aiProposals.length}>
-        <ItemList empty="Chưa có đề xuất AI" items={aiProposals.map((a: AiProposal) => ({
-          key: a.id,
-          title: `${a.taskType} — ${a.title}`,
-          meta: trim(a.proposedContent),
+      <Card title="Đề xuất AI — Chờ duyệt" sub={`${aiProposals.filter((a: AiProposal) => a.status === 'PendingReview').length} pending`} icon={<Bot size={14} />}>
+        <ItemList empty="Không có đề xuất nào" items={aiProposals.map((a: AiProposal) => ({
+          key: a.id, title: `${a.taskType} — ${a.title}`, meta: truncate(a.proposedContent),
           badge: aiProposalBadge(a.status),
           actions: a.status === 'PendingReview' ? (
             <div className="item-actions">
-              <button className="btn btn-success" onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/ai-proposals/${a.id}/accept`, { reviewedBy: 'consultant', comment: 'Accepted.' }), 'Đã chấp nhận')}>
-                <CheckCircle2 size={12} /> Chấp nhận
+              <button className="btn btn-sm btn-success" onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/ai-proposals/${a.id}/accept`, { reviewedBy: 'consultant', comment: 'Accepted.' }), 'Đã chấp nhận')}>
+                <CheckCircle2 size={11} /> Chấp nhận
               </button>
-              <button className="btn btn-danger" onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/ai-proposals/${a.id}/reject`, { reviewedBy: 'consultant', comment: 'Rejected.' }), 'Đã từ chối')}>
+              <button className="btn btn-sm btn-danger" onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/ai-proposals/${a.id}/reject`, { reviewedBy: 'consultant', comment: 'Rejected.' }), 'Đã từ chối')}>
                 Từ chối
               </button>
             </div>
@@ -597,16 +683,15 @@ function AiTab({ aiProposals, aiRuns, promptTemplates, customerId, projectId, su
       </Card>
 
       <div className="g2">
-        <Card title="Lịch sử AI Runs" icon={<Activity size={15} />} count={aiRuns.length}>
+        <Card title="Lịch sử AI Runs" sub={`${aiRuns.length} runs`} icon={<Activity size={14} />}>
           <ItemList empty="Chưa có AI run" items={aiRuns.slice(0, 10).map((r: AiRun) => ({
-            key: r.id,
-            title: `${r.runType} — ${r.status}`,
-            meta: `${r.provider} · ${r.promptTemplateKey ?? 'no-template'} · ${trim(r.maskedInputPreview ?? r.outputSummary ?? '')}`,
+            key: r.id, title: `${r.runType} — ${r.status}`,
+            meta: `${r.provider} · ${r.promptTemplateKey ?? 'no-template'} · ${truncate(r.maskedInputPreview ?? r.outputSummary ?? '')}`,
             badge: aiRunBadge(r.status)
           }))} />
         </Card>
 
-        <Card title="Prompt Templates" icon={<Bot size={15} />} count={promptTemplates.length}>
+        <Card title="Prompt Templates" sub={`${promptTemplates.length} templates`} icon={<Bot size={14} />}>
           <form className="f-stack" onSubmit={e => {
             e.preventDefault();
             const fd = new FormData(e.currentTarget);
@@ -614,7 +699,7 @@ function AiTab({ aiProposals, aiRuns, promptTemplates, customerId, projectId, su
               key: fd.get('key'), name: fd.get('name'), taskType: fd.get('taskType'),
               description: fd.get('description'), systemPrompt: fd.get('systemPrompt'),
               userPromptTemplate: fd.get('userPromptTemplate'),
-              outputJsonSchema: fd.get('outputJsonSchema') || '{"type":"object","required":["title","content"],"properties":{"title":{"type":"string"},"content":{"type":"string"}}}',
+              outputJsonSchema: '{"type":"object","required":["title","content"],"properties":{"title":{"type":"string"},"content":{"type":"string"}}}',
               createdBy: 'platform.admin'
             }), 'Đã tạo prompt template');
             (e.target as HTMLFormElement).reset();
@@ -624,9 +709,8 @@ function AiTab({ aiProposals, aiRuns, promptTemplates, customerId, projectId, su
               <input name="name" placeholder="Tên template" required />
             </div>
             <select name="taskType" defaultValue="GenerateUrs">
-              <option>GenerateUrs</option><option>GenerateBlueprint</option>
-              <option>GenerateConfigSpec</option><option>ClassifyIssue</option>
-              <option>AnalyzeRootCause</option><option>GenerateFixProposal</option>
+              <option>GenerateUrs</option><option>GenerateBlueprint</option><option>GenerateConfigSpec</option>
+              <option>ClassifyIssue</option><option>AnalyzeRootCause</option><option>GenerateFixProposal</option>
               <option>GenerateChangeRequest</option><option>GenerateRegressionTestPlan</option>
               <option>GenerateReleaseDraft</option><option>GenerateKnowledgeUpdate</option>
             </select>
@@ -636,8 +720,7 @@ function AiTab({ aiProposals, aiRuns, promptTemplates, customerId, projectId, su
             <button className="btn btn-primary"><Plus size={13} /> Tạo Template</button>
           </form>
           <ItemList empty="Chưa có template" items={promptTemplates.map((t: PromptTemplate) => ({
-            key: t.template.id,
-            title: `${t.template.key} — ${t.template.taskType}`,
+            key: t.template.id, title: `${t.template.key} — ${t.template.taskType}`,
             meta: t.template.description,
             badge: <span className="badge b-blue">{t.versions[0] ? `v${t.versions[0].version}` : 'no ver'}</span>
           }))} />
@@ -652,20 +735,15 @@ function ApplyTab({ applyRuns, snapshots, snapshotDiffs, regressionRuns, readine
   const testEnvs = environments.filter((e: Environment) => e.kind === 'Test' || e.kind === 'Uat');
   return (
     <>
-      <div><p className="page-title">Apply & Test</p><p className="page-sub">Controlled apply · Test/UAT · Regression</p></div>
-
       <div className="g2">
-        <Card title="Dry Run / Apply" icon={<Rocket size={15} />}>
+        <Card title="Dry Run / Apply" sub="Test/UAT only — không apply production" icon={<Rocket size={14} />}>
           <form className="f-stack" onSubmit={e => {
             e.preventDefault();
             const fd = new FormData(e.currentTarget);
             const cid2 = String(fd.get('connectorId') ?? '');
             submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/controlled-test-apply/dry-run`, {
-              environmentId: fd.get('environmentId'),
-              connectorId: cid2 || null,
-              sourceType: 'FixProposal',
-              sourceId: fd.get('sourceId'),
-              requestedBy: 'test.operator'
+              environmentId: fd.get('environmentId'), connectorId: cid2 || null,
+              sourceType: 'FixProposal', sourceId: fd.get('sourceId'), requestedBy: 'test.operator'
             }), 'Dry run xong');
           }}>
             <select name="environmentId" defaultValue={testEnvs[0]?.id ?? ''} disabled={testEnvs.length === 0}>
@@ -678,23 +756,22 @@ function ApplyTab({ applyRuns, snapshots, snapshotDiffs, regressionRuns, readine
             <select name="sourceId" disabled={fixProposals.length === 0}>
               {fixProposals.map((f: FixProposal) => <option key={f.id} value={f.id}>{f.title} — {f.riskLevel}</option>)}
             </select>
-            <button className="btn btn-primary" disabled={testEnvs.length === 0 || fixProposals.length === 0}>
-              <Play size={13} /> Dry Run
+            <button className="btn btn-navy" disabled={testEnvs.length === 0 || fixProposals.length === 0}>
+              <Rocket size={13} /> Dry Run
             </button>
           </form>
         </Card>
 
-        <Card title="Apply Runs" icon={<Rocket size={15} />} count={applyRuns.length}>
+        <Card title="Apply Runs" sub={`${applyRuns.length} runs`} icon={<Rocket size={14} />}>
           <ItemList empty="Chưa có apply run" items={applyRuns.slice(0, 6).map((a: ApplyRun) => ({
-            key: a.id,
-            title: `${a.applyRunNo} — ${a.sourceType}`,
-            meta: `${a.riskLevel} · ${trim(a.summary || a.rollbackRecommendation || '')}`,
+            key: a.id, title: `${a.applyRunNo} — ${a.sourceType}`,
+            meta: `${a.riskLevel} · ${truncate(a.summary || a.rollbackRecommendation || '')}`,
             badge: applyBadge(a.status),
             actions: (
-              <button className="btn btn-primary"
+              <button className="btn btn-sm btn-primary"
                 disabled={a.status !== 'DryRunSucceeded' && a.status !== 'ApprovalRequired'}
                 onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/apply-runs/${a.id}/execute`, { requestedBy: 'test.operator' }), 'Apply đã thực hiện')}>
-                <Rocket size={12} /> Execute
+                <Rocket size={11} /> Execute
               </button>
             )
           }))} />
@@ -702,26 +779,24 @@ function ApplyTab({ applyRuns, snapshots, snapshotDiffs, regressionRuns, readine
       </div>
 
       <div className="g2">
-        <Card title="Regression & Readiness" icon={<GitCompare size={15} />}>
+        <Card title="Regression & Readiness" icon={<GitCompare size={14} />}>
           <ItemList empty="Chưa có readiness report" items={readinessReports.slice(0, 4).map((r: ReleaseReadinessReport) => ({
-            key: r.id, title: `${r.reportNo} — ${r.status}`, meta: trim(r.summary || r.blockers),
+            key: r.id, title: `${r.reportNo} — ${r.status}`, meta: truncate(r.summary || r.blockers),
             badge: r.status === 'Ready' ? <span className="badge b-green">Ready</span> : <span className="badge b-red">Not Ready</span>
           }))} />
           <ItemList empty="Chưa có regression run" items={regressionRuns.slice(0, 4).map((r: RegressionTestRun) => ({
             key: r.id, title: `${r.runNo} — ${r.status}`,
-            meta: `Pass: ${r.passedTests}/${r.totalTests} · ${trim(r.summary)}`,
+            meta: `Pass: ${r.passedTests}/${r.totalTests} · ${truncate(r.summary)}`,
             badge: r.status === 'Passed' ? <span className="badge b-green">Passed</span> : <span className="badge b-red">{r.status}</span>
           }))} />
         </Card>
-
-        <Card title="Snapshots" icon={<GitCompare size={15} />}>
+        <Card title="Snapshots & Diffs" icon={<GitCompare size={14} />}>
           <ItemList empty="Chưa có snapshot" items={snapshots.slice(0, 4).map((s: EnvironmentSnapshot) => ({
-            key: s.id, title: `${s.snapshotNo} — ${s.stage}`, meta: trim(s.maskedSummary),
+            key: s.id, title: `${s.snapshotNo} — ${s.stage}`, meta: truncate(s.maskedSummary),
             badge: <span className="badge b-default">{s.kind}</span>
           }))} />
           <ItemList empty="Chưa có diff" items={snapshotDiffs.slice(0, 4).map((d: SnapshotDiff) => ({
-            key: d.id, title: `${d.snapshotKind} diff`, meta: trim(d.diffSummary),
-            badge: riskBadge(d.riskLevel)
+            key: d.id, title: `${d.snapshotKind} diff`, meta: truncate(d.diffSummary), badge: riskBadge(d.riskLevel)
           }))} />
         </Card>
       </div>
@@ -733,9 +808,7 @@ function ApplyTab({ applyRuns, snapshots, snapshotDiffs, regressionRuns, readine
 function AuditTab({ audits, signOffs, traceChains }: any) {
   return (
     <>
-      <div><p className="page-title">Audit & Traceability</p><p className="page-sub">Sign-offs · Audit logs · Traceability chains</p></div>
-
-      <Card title="Traceability — REQ → URS → Blueprint → Config" icon={<Link2 size={15} />}>
+      <Card title="Traceability — REQ → URS → Blueprint → Config" icon={<Shield size={14} />}>
         <div className="trace-list">
           {traceChains.length === 0 && <div className="empty-msg">Chưa có trace chain</div>}
           {traceChains.map((c: TraceChain, i: number) => (
@@ -755,10 +828,10 @@ function AuditTab({ audits, signOffs, traceChains }: any) {
                 <strong className="tn-text">{c.blueprint ? `${c.blueprint.blueprintNo} v${c.blueprint.version}` : 'Chưa có'}</strong>
                 <span className="tn-stat">{c.blueprint?.status ?? 'Gap'}</span>
               </div>
-              <div className={`trace-node ${c.configSpec ? c.configSpec.riskLevel.toLowerCase().replace(' ','-') : 'gap'}`}>
+              <div className={`trace-node ${c.configSpec ? 'approved' : 'gap'}`}>
                 <span className="tn-lbl">Config</span>
-                <strong className="tn-text">{c.configSpec ? `${c.configSpec.configNo} ${c.configSpec.riskLevel}` : 'Chưa có'}</strong>
-                <span className="tn-stat">{c.configSpec?.status ?? 'Gap'}</span>
+                <strong className="tn-text">{c.configSpec ? `${c.configSpec.configNo}` : 'Chưa có'}</strong>
+                <span className="tn-stat">{c.configSpec ? `${c.configSpec.riskLevel} · ${c.configSpec.status}` : 'Gap'}</span>
               </div>
             </div>
           ))}
@@ -766,19 +839,15 @@ function AuditTab({ audits, signOffs, traceChains }: any) {
       </Card>
 
       <div className="g2">
-        <Card title="Sign-offs" icon={<CheckCircle2 size={15} />} count={signOffs.length}>
+        <Card title="Sign-offs" sub={`${signOffs.length} lần ký`} icon={<CheckCircle2 size={14} />}>
           <ItemList empty="Chưa có sign-off" items={signOffs.slice(0, 8).map((s: DocumentSignOff) => ({
-            key: s.id,
-            title: `${s.documentKind} v${s.version}`,
+            key: s.id, title: `${s.documentKind} v${s.version}`,
             meta: `${s.signedOffBy} · ${s.role ?? 'Reviewer'} · ${new Date(s.signedOffAt).toLocaleString('vi-VN')}`
           }))} />
         </Card>
-
-        <Card title="Audit Logs" icon={<Shield size={15} />} count={audits.length}>
+        <Card title="Audit Logs" sub={`${audits.length} bản ghi`} icon={<Shield size={14} />}>
           <ItemList empty="Chưa có audit log" items={audits.slice(0, 10).map((a: AuditLog) => ({
-            key: a.id,
-            title: a.action,
-            meta: `${a.entityType} · ${new Date(a.createdAt).toLocaleString('vi-VN')}`
+            key: a.id, title: a.action, meta: `${a.entityType} · ${new Date(a.createdAt).toLocaleString('vi-VN')}`
           }))} />
         </Card>
       </div>
@@ -787,13 +856,32 @@ function AuditTab({ audits, signOffs, traceChains }: any) {
 }
 
 // ── Reusable components ───────────────────────────────────────────
-function Card({ title, icon, count, children }: { title: string; icon: React.ReactNode; count?: number; children: React.ReactNode }) {
+function StatCard({ color, label, period, value, trend, up, prev }: any) {
+  return (
+    <div className={`stat-card ${color}`}>
+      <div className="stat-top">
+        <span className="stat-label">{label}</span>
+        <span className="stat-period">{period}</span>
+      </div>
+      <div className="stat-value">{value}</div>
+      <div className={`stat-trend ${up ? 'up' : 'down'}`}>{trend}</div>
+      <div className="stat-prev">{prev}</div>
+    </div>
+  );
+}
+
+function Card({ title, sub, icon, link, children }: { title: string; sub?: string; icon?: React.ReactNode; link?: string; children: React.ReactNode }) {
   return (
     <div className="card">
       <div className="card-header">
-        {icon}
-        <h3>{title}</h3>
-        {count !== undefined && <span className="card-count">{count}</span>}
+        <div className="card-header-left">
+          {icon}
+          <div>
+            <h3>{title}</h3>
+            {sub && <p>{sub}</p>}
+          </div>
+        </div>
+        {link && <span className="card-link">{link}</span>}
       </div>
       <div className="card-body">{children}</div>
     </div>
@@ -820,14 +908,16 @@ function ItemList({ items, empty }: { items: { key: string; title: string; meta:
 
 function SmartForm({ fields, submitLabel, disabled, onSubmit }: { fields: [string, string, string][]; submitLabel: string; disabled?: boolean; onSubmit: (b: unknown) => void }) {
   return (
-    <form className="f-row" style={{ alignItems: 'end' }} onSubmit={(e: FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      const fd = new FormData(e.currentTarget);
-      onSubmit(Object.fromEntries(fields.map(([k]) => [k, fd.get(k)])));
-      e.currentTarget.reset();
-    }}>
+    <form style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-end' }}
+      onSubmit={(e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const fd = new FormData(e.currentTarget);
+        onSubmit(Object.fromEntries(fields.map(([k]) => [k, fd.get(k)])));
+        e.currentTarget.reset();
+      }}>
       {fields.map(([k, , ph]) => (
-        <input key={k} name={k} placeholder={ph} disabled={disabled} required={k === 'code' || k === 'name'} />
+        <input key={k} name={k} placeholder={ph} disabled={disabled} style={{ flex: '1 1 120px', minWidth: 100 }}
+          required={k === 'code' || k === 'name'} />
       ))}
       <button disabled={disabled} className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
         <Plus size={13} /> {submitLabel}
@@ -836,33 +926,26 @@ function SmartForm({ fields, submitLabel, disabled, onSubmit }: { fields: [strin
   );
 }
 
-// ── Badge helpers ─────────────────────────────────────────────────
-function statusBadge(status: string) {
-  const cls = status === 'Approved' ? 'b-green' : status === 'Draft' ? 'b-default' : status === 'Archived' ? 'b-red' : 'b-yellow';
-  return <span className={`badge ${cls}`}>{status}</span>;
+// ── Helpers ───────────────────────────────────────────────────────
+function statusBadge(s: string) {
+  return <span className={`badge ${s === 'Approved' ? 'b-green' : s === 'Draft' ? 'b-default' : s === 'Archived' ? 'b-red' : 'b-yellow'}`}>{s}</span>;
 }
-function riskBadge(risk: string) {
-  const cls = risk === 'Critical' ? 'b-red' : risk === 'High' ? 'b-yellow' : risk === 'Low' ? 'b-green' : 'b-blue';
-  return <span className={`badge ${cls}`}>{risk}</span>;
+function riskBadge(r: string) {
+  return <span className={`badge ${r === 'Critical' ? 'b-red' : r === 'High' ? 'b-yellow' : r === 'Low' ? 'b-green' : 'b-blue'}`}>{r}</span>;
 }
-function issueBadge(status: string) {
-  const cls = status === 'Closed' || status === 'Resolved' ? 'b-green' : status === 'InProgress' ? 'b-blue' : status === 'Cancelled' ? 'b-default' : 'b-yellow';
-  return <span className={`badge ${cls}`}>{status}</span>;
+function issueBadge(s: string) {
+  return <span className={`badge ${s === 'Closed' || s === 'Resolved' ? 'b-green' : s === 'InProgress' ? 'b-blue' : s === 'Cancelled' ? 'b-default' : 'b-yellow'}`}>{s}</span>;
 }
-function aiProposalBadge(status: string) {
-  const cls = status === 'Accepted' ? 'b-green' : status === 'PendingReview' ? 'b-yellow' : status === 'Rejected' || status === 'FailedValidation' ? 'b-red' : 'b-default';
-  return <span className={`badge ${cls}`}>{status}</span>;
+function aiProposalBadge(s: string) {
+  return <span className={`badge ${s === 'Accepted' ? 'b-green' : s === 'PendingReview' ? 'b-yellow' : s === 'Rejected' || s === 'FailedValidation' ? 'b-red' : 'b-default'}`}>{s}</span>;
 }
-function aiRunBadge(status: string) {
-  const cls = status === 'Completed' ? 'b-green' : status === 'Running' || status === 'Queued' ? 'b-blue' : status === 'Failed' ? 'b-red' : 'b-default';
-  return <span className={`badge ${cls}`}>{status}</span>;
+function aiRunBadge(s: string) {
+  return <span className={`badge ${s === 'Completed' ? 'b-green' : s === 'Running' || s === 'Queued' ? 'b-blue' : s === 'Failed' ? 'b-red' : 'b-default'}`}>{s}</span>;
 }
-function applyBadge(status: string) {
-  const cls = status === 'Applied' || status === 'ReleaseReady' ? 'b-green' : status === 'Applying' || status === 'DryRunSucceeded' ? 'b-blue' : status.includes('Failed') ? 'b-red' : 'b-yellow';
-  return <span className={`badge ${cls}`}>{status}</span>;
+function applyBadge(s: string) {
+  return <span className={`badge ${s === 'Applied' || s === 'ReleaseReady' ? 'b-green' : s === 'Applying' || s === 'DryRunSucceeded' ? 'b-blue' : s.includes('Failed') ? 'b-red' : 'b-yellow'}`}>{s}</span>;
 }
-
-function trim(val: string, max = 120) {
-  if (!val) return '';
-  return val.length > max ? val.slice(0, max) + '…' : val;
+function truncate(v: string, max = 100) {
+  if (!v) return '';
+  return v.length > max ? v.slice(0, max) + '…' : v;
 }
