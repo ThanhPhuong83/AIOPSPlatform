@@ -256,141 +256,157 @@ function Workspace({ engineer, onLogout, dark, onToggleDark, lang, setLang, t }:
 
   return (
     <div className="ws-shell">
-      {/* ── Nav row 1 ── */}
-      <div className="nav1">
-        <div className="nav1-logo">
-          <div className="nav1-logo-mark">
-            <Building2 size={16} />
-          </div>
-          <span className="nav1-logo-name">HRM AI OPS</span>
-        </div>
-
-        <div className="nav1-items">
-          {navMain.map(n => (
-            <button key={n.id} className={`nav1-item${tab === n.id ? ' active' : ''}`} onClick={() => setTab(n.id)}>
-              {n.icon}
-              <span>{n.label}</span>
-              {n.id === 'issues' && openIssues > 0 && <span className="badge-nav">{openIssues}</span>}
-              {n.id === 'ai'     && pendingAi > 0  && <span className="badge-nav">{pendingAi}</span>}
-              <ChevronDown size={11} style={{ opacity: .5 }} />
-            </button>
-          ))}
-        </div>
-
-        <div className="nav1-right">
-          <select
-            className="ctx-sel"
-            value={customerId}
-            onChange={e => refreshAll(e.target.value, '')}
-          >
+      {/* ── Topbar (horizontal) ── */}
+      <div className="ws-topbar">
+        <div className="ws-topbar-left">
+          <span className="ctx-lbl">{t('common.customer')}</span>
+          <select className="ctx-sel" value={customerId} onChange={e => refreshAll(e.target.value, '')}>
             {customers.map(c => <option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}
           </select>
-          <select
-            className="ctx-sel"
-            style={{ minWidth: 120 }}
-            value={projectId}
-            onChange={e => refreshAll(customerId, e.target.value)}
-          >
-            {projects.map(p => <option key={p.id} value={p.id}>{p.code}</option>)}
+          <span className="ctx-lbl">{t('common.project')}</span>
+          <select className="ctx-sel" style={{ minWidth: 110 }} value={projectId} onChange={e => refreshAll(customerId, e.target.value)}>
+            {projects.map(p => <option key={p.id} value={p.id}>{p.code} — {p.name}</option>)}
           </select>
-          <div className="nav1-divider" />
+        </div>
+
+        <div className="ws-topbar-right">
+          {/* Status */}
+          <div className={`top-pill ${state}`}>
+            <span style={{ width:6,height:6,borderRadius:'50%',background:state==='loading'?'#60a5fa':state==='error'?'#f87171':'#4ade80',display:'inline-block',marginRight:5 }} />
+            {state==='loading' ? t('top.loading') : state==='error' ? t('top.error') : message || t('top.ready')}
+          </div>
+
+          <button className="btn-top btn-top-solid" onClick={() => refreshAll()}>
+            <RefreshCw size={11} /> {t('top.refresh')}
+          </button>
+
+          <div className="top-divider" />
+
           {/* Language selector */}
           {LANGS.map(l => (
-            <button key={l.code} onClick={() => setLang(l.code)} className="lang-btn"
-              style={{ background: lang === l.code ? 'rgba(255,255,255,.25)' : 'rgba(255,255,255,.08)',
-                border: `1px solid ${lang === l.code ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.15)'}`,
-                color: lang === l.code ? '#fff' : 'rgba(255,255,255,.6)',
-                padding: '3px 8px', borderRadius: 4, cursor: 'pointer',
-                fontSize: 11, fontWeight: lang === l.code ? 700 : 400 }}>
+            <button key={l.code} onClick={() => setLang(l.code)}
+              style={{ padding:'3px 8px', borderRadius:4, cursor:'pointer', fontSize:11,
+                fontWeight: lang===l.code ? 700 : 400, border:'none',
+                background: lang===l.code ? 'rgba(255,255,255,.25)' : 'rgba(255,255,255,.08)',
+                color: lang===l.code ? '#fff' : 'rgba(255,255,255,.55)' }}>
               {l.flag} {l.code.toUpperCase()}
             </button>
           ))}
-          <div className="nav1-divider" />
+
+          <div className="top-divider" />
+
+          {/* Theme toggle */}
           <button className="theme-toggle" onClick={onToggleDark} title={dark ? t('top.light') : t('top.dark')}>
-            {dark ? <Sun size={15} /> : <Moon size={15} />}
+            {dark ? <Sun size={14} /> : <Moon size={14} />}
           </button>
+
+          {/* User */}
           <div className="nav1-user" onClick={onLogout} title="Logout">
             <div className="nav1-avatar">{engineer.name[0].toUpperCase()}</div>
-            <span>{engineer.name}</span>
-            <LogOut size={12} style={{ opacity: .7 }} />
+            <span style={{ maxWidth:100, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{engineer.name}</span>
+            <LogOut size={11} style={{ opacity:.7 }} />
           </div>
         </div>
       </div>
 
-      {/* ── Nav row 2 ── */}
-      <div className="nav2">
-        {subNav[tab].map((s, i) => (
-          <button key={s} className={`nav2-item${i === 0 ? ' active' : ''}`}>{s}</button>
-        ))}
-        <div className="nav2-actions">
-          <div style={{ fontSize: 12, color: state === 'loading' ? '#60a5fa' : state === 'error' ? '#f87171' : '#6ee7b7', display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: state === 'loading' ? '#60a5fa' : state === 'error' ? '#f87171' : '#4ade80', display: 'inline-block' }} />
-            {state === 'loading' ? t('top.loading') : state === 'error' ? t('top.error') : message || t('top.ready')}
+      {/* ── Body: left sidebar + right ── */}
+      <div className="ws-body">
+        {/* ── Left sidebar (vertical nav) ── */}
+        <div className="ws-left">
+          {/* Logo */}
+          <div className="ws-left-logo">
+            <div className="ws-left-logo-mark">
+              <Building2 size={18} />
+            </div>
+            <div>
+              <div className="ws-left-logo-name">HRM AI Ops</div>
+              <div className="ws-left-logo-sub">v1.0 · Phase 1–17</div>
+            </div>
           </div>
-          <button className="btn-top btn-top-solid" onClick={() => refreshAll()}>
-            <RefreshCw size={12} /> {t('top.refresh')}
-          </button>
-          <button className="btn-top btn-top-outline">
-            <Bell size={12} /> {t('top.notify')}
-          </button>
-        </div>
-      </div>
 
-      {/* ── Page header ── */}
-      <div className="page-hdr">
-        <div className="page-hdr-left">
-          <h2>{title}</h2>
-          <p>{subtitle} · <strong>{selCustomer?.name ?? '—'}</strong> / {selProject?.name ?? '—'}</p>
-        </div>
-      </div>
+          {/* Nav items */}
+          <div className="ws-left-section">Menu</div>
+          {navMain.map(n => (
+            <button key={n.id} className={`ws-nav-item${tab === n.id ? ' active' : ''}`} onClick={() => setTab(n.id)}>
+              {n.icon}
+              <span style={{ flex:1 }}>{n.label}</span>
+              {n.id === 'issues' && openIssues > 0 && <span className="ws-nav-badge">{openIssues}</span>}
+              {n.id === 'ai'     && pendingAi  > 0 && <span className="ws-nav-badge">{pendingAi}</span>}
+            </button>
+          ))}
 
-      {/* ── Content ── */}
-      <div className="ws-content">
-        {tab === 'dashboard' && (
-          <DashboardTab
-            engineer={engineer}
-            selCustomer={selCustomer} selProject={selProject}
-            requirements={requirements} urs={urs} blueprints={blueprints}
-            configs={configs} issues={issues} applyRuns={applyRuns}
-            readinessReports={readinessReports} aiProposals={aiProposals}
-            audits={audits} modules={modules}
-            customers={customers} projects={projects}
-            customerId={customerId} projectId={projectId}
-            openIssues={openIssues} pendingAi={pendingAi} approvedDocs={approvedDocs}
-            submit={submit} t={t}
-          />
-        )}
-        {tab === 'documents' && (
-          <DocumentsTab
-            requirements={requirements} urs={urs} blueprints={blueprints} configs={configs}
-            customerId={customerId} projectId={projectId}
-            submit={submit} signOff={signOff} t={t}
-          />
-        )}
-        {tab === 'issues' && (
-          <IssuesTab
-            issues={issues} fixProposals={fixProposals} testPlans={testPlans}
-            releaseDrafts={releaseDrafts} configs={configs}
-            customerId={customerId} projectId={projectId} submit={submit} t={t}
-          />
-        )}
-        {tab === 'ai' && (
-          <AiTab
-            aiProposals={aiProposals} aiRuns={aiRuns} promptTemplates={promptTemplates}
-            customerId={customerId} projectId={projectId} submit={submit} t={t}
-          />
-        )}
-        {tab === 'apply' && (
-          <ApplyTab
-            applyRuns={applyRuns} snapshots={snapshots} snapshotDiffs={snapshotDiffs}
-            regressionRuns={regressionRuns} readinessReports={readinessReports}
-            environments={environments} connectors={connectors} fixProposals={fixProposals}
-            customerId={customerId} projectId={projectId} submit={submit} t={t}
-          />
-        )}
-        {tab === 'audit' && (
-          <AuditTab audits={audits} signOffs={signOffs} traceChains={traceChains} t={t} />
-        )}
+          {/* Context info */}
+          <div className="ws-left-section" style={{ marginTop:'auto' }}>{t('common.customer')}</div>
+          <div style={{ padding:'4px 16px 4px', fontSize:12, color:'rgba(255,255,255,.6)' }}>
+            {selCustomer?.name ?? '—'}
+          </div>
+          <div style={{ padding:'0 16px 16px', fontSize:11, color:'rgba(255,255,255,.35)' }}>
+            {selProject?.name ?? '—'}
+          </div>
+        </div>
+
+        {/* ── Right: page header + content ── */}
+        <div className="ws-right">
+          {/* Page header */}
+          <div className="page-hdr">
+            <div className="page-hdr-left">
+              <h2>{title}</h2>
+              <p>{subtitle} · <strong>{selCustomer?.name ?? '—'}</strong> / {selProject?.name ?? '—'}</p>
+            </div>
+            <div className="page-hdr-right">
+              <span style={{ fontSize:11, color:'var(--text-3)' }}>{new Date().toLocaleDateString()}</span>
+            </div>
+          </div>
+
+          {/* Tab content */}
+          <div className="ws-content">
+            {tab === 'dashboard' && (
+              <DashboardTab
+                engineer={engineer}
+                selCustomer={selCustomer} selProject={selProject}
+                requirements={requirements} urs={urs} blueprints={blueprints}
+                configs={configs} issues={issues} applyRuns={applyRuns}
+                readinessReports={readinessReports} aiProposals={aiProposals}
+                audits={audits} modules={modules}
+                customers={customers} projects={projects}
+                customerId={customerId} projectId={projectId}
+                openIssues={openIssues} pendingAi={pendingAi} approvedDocs={approvedDocs}
+                submit={submit} t={t}
+              />
+            )}
+            {tab === 'documents' && (
+              <DocumentsTab
+                requirements={requirements} urs={urs} blueprints={blueprints} configs={configs}
+                customerId={customerId} projectId={projectId}
+                submit={submit} signOff={signOff} t={t}
+              />
+            )}
+            {tab === 'issues' && (
+              <IssuesTab
+                issues={issues} fixProposals={fixProposals} testPlans={testPlans}
+                releaseDrafts={releaseDrafts} configs={configs}
+                customerId={customerId} projectId={projectId} submit={submit} t={t}
+              />
+            )}
+            {tab === 'ai' && (
+              <AiTab
+                aiProposals={aiProposals} aiRuns={aiRuns} promptTemplates={promptTemplates}
+                customerId={customerId} projectId={projectId} submit={submit} t={t}
+              />
+            )}
+            {tab === 'apply' && (
+              <ApplyTab
+                applyRuns={applyRuns} snapshots={snapshots} snapshotDiffs={snapshotDiffs}
+                regressionRuns={regressionRuns} readinessReports={readinessReports}
+                environments={environments} connectors={connectors} fixProposals={fixProposals}
+                customerId={customerId} projectId={projectId} submit={submit} t={t}
+              />
+            )}
+            {tab === 'audit' && (
+              <AuditTab audits={audits} signOffs={signOffs} traceChains={traceChains} t={t} />
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
