@@ -67,7 +67,7 @@ export function App() {
     setState('loading');
     try {
       const [nextCustomers, nextModules] = await Promise.all([
-        api.get<Customer[]>('/api/customers'),
+        api.getList<Customer>('/api/customers'),
         api.get<HrmModule[]>('/api/hrm-modules')
       ]);
       setCustomers(nextCustomers);
@@ -81,14 +81,14 @@ export function App() {
         return;
       }
 
-      const nextProjects = await api.get<Project[]>(`/api/customers/${activeCustomerId}/projects`);
+      const nextProjects = await api.getList<Project>(`/api/customers/${activeCustomerId}/projects`);
       setProjects(nextProjects);
       const activeProjectId = nextProjectId || nextProjects[0]?.id || '';
       setProjectId(activeProjectId);
 
       const [nextAudits, nextAiRuns] = await Promise.all([
-        api.get<AuditLog[]>(`/api/customers/${activeCustomerId}/audit-logs`),
-        api.get<AiRun[]>(`/api/customers/${activeCustomerId}/ai-runs`)
+        api.getList<AuditLog>(`/api/customers/${activeCustomerId}/audit-logs`),
+        api.getList<AiRun>(`/api/customers/${activeCustomerId}/ai-runs`)
       ]);
       setAudits(nextAudits);
       setAiRuns(nextAiRuns);
@@ -114,12 +114,12 @@ export function App() {
           nextTraceChains,
           nextAiProposals
         ] = await Promise.all([
-          api.get<Requirement[]>(`/api/customers/${activeCustomerId}/projects/${activeProjectId}/requirements`),
+          api.getList<Requirement>(`/api/customers/${activeCustomerId}/projects/${activeProjectId}/requirements`),
           api.get<Environment[]>(`/api/customers/${activeCustomerId}/projects/${activeProjectId}/environments`),
           api.get<UrsDocument[]>(`/api/customers/${activeCustomerId}/projects/${activeProjectId}/urs`),
           api.get<Blueprint[]>(`/api/customers/${activeCustomerId}/projects/${activeProjectId}/blueprints`),
           api.get<ConfigSpec[]>(`/api/customers/${activeCustomerId}/projects/${activeProjectId}/config-specs`),
-          api.get<Issue[]>(`/api/customers/${activeCustomerId}/projects/${activeProjectId}/issues`),
+          api.getList<Issue>(`/api/customers/${activeCustomerId}/projects/${activeProjectId}/issues`),
           api.get<FixProposal[]>(`/api/customers/${activeCustomerId}/projects/${activeProjectId}/fix-proposals`),
           api.get<RegressionTestPlan[]>(`/api/customers/${activeCustomerId}/projects/${activeProjectId}/regression-test-plans`),
           api.get<ReleaseDraft[]>(`/api/customers/${activeCustomerId}/projects/${activeProjectId}/release-drafts`),
