@@ -1,10 +1,14 @@
 export const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000';
 
+let _userId = '';
+export function setCurrentUser(uid: string) { _userId = uid; }
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(_userId ? { 'X-User-Id': _userId } : {}),
       ...(options?.headers ?? {})
     }
   });
