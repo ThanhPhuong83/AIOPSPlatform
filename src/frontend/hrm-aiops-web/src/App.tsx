@@ -1,7 +1,7 @@
 import {
   Activity, AlertTriangle, Bot, Building2, CheckCircle2, ChevronDown,
-  FileText, GitCompare, Layers3, LogOut, Plus, RefreshCw, Rocket,
-  Shield, ShieldCheck, Users, Lock, Bell
+  FileText, GitCompare, Layers3, LogOut, Moon, Plus, RefreshCw, Rocket,
+  Shield, ShieldCheck, Sun, Users, Lock, Bell
 } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
@@ -20,12 +20,19 @@ type Engineer = { userId: string; name: string };
 // ── Root ──────────────────────────────────────────────────────────
 export function App() {
   const [engineer, setEngineer] = useState<Engineer | null>(null);
-  if (!engineer) return <LoginPage onLogin={setEngineer} />;
-  return <Workspace engineer={engineer} onLogout={() => setEngineer(null)} />;
+  const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    localStorage.setItem('theme', dark ? 'dark' : 'light');
+  }, [dark]);
+
+  if (!engineer) return <LoginPage onLogin={setEngineer} dark={dark} onToggleDark={() => setDark(d => !d)} />;
+  return <Workspace engineer={engineer} onLogout={() => setEngineer(null)} dark={dark} onToggleDark={() => setDark(d => !d)} />;
 }
 
 // ── Login ─────────────────────────────────────────────────────────
-function LoginPage({ onLogin }: { onLogin: (e: Engineer) => void }) {
+function LoginPage({ onLogin, dark, onToggleDark }: { onLogin: (e: Engineer) => void; dark: boolean; onToggleDark: () => void }) {
   const [err, setErr] = useState('');
   function handle(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -66,13 +73,17 @@ function LoginPage({ onLogin }: { onLogin: (e: Engineer) => void }) {
           <button type="submit" className="login-btn"><Lock size={15} /> Đăng nhập</button>
         </form>
         <p className="login-note">HRM AI Ops · v1.0 · Phase 1–17 Scaffold</p>
+        <button className="theme-toggle-login" onClick={onToggleDark} title="Toggle theme">
+          {dark ? <Sun size={16} /> : <Moon size={16} />}
+          {dark ? 'Chế độ sáng' : 'Chế độ tối'}
+        </button>
       </div>
     </div>
   );
 }
 
 // ── Workspace ─────────────────────────────────────────────────────
-function Workspace({ engineer, onLogout }: { engineer: Engineer; onLogout: () => void }) {
+function Workspace({ engineer, onLogout, dark, onToggleDark }: { engineer: Engineer; onLogout: () => void; dark: boolean; onToggleDark: () => void }) {
   const [tab, setTab] = useState<Tab>('dashboard');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -257,6 +268,9 @@ function Workspace({ engineer, onLogout }: { engineer: Engineer; onLogout: () =>
             {projects.map(p => <option key={p.id} value={p.id}>{p.code}</option>)}
           </select>
           <div className="nav1-divider" />
+          <button className="theme-toggle" onClick={onToggleDark} title={dark ? 'Chuyển sang Light' : 'Chuyển sang Dark'}>
+            {dark ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
           <div className="nav1-user" onClick={onLogout} title="Đăng xuất">
             <div className="nav1-avatar">{engineer.name[0].toUpperCase()}</div>
             <span>{engineer.name}</span>
