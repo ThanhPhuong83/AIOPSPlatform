@@ -1274,6 +1274,28 @@ app.MapPost("/api/customers/{customerId:guid}/security/roles", (Guid customerId,
     return Results.Created($"/api/customers/{customerId}/security/roles/{role.Id}", role);
 });
 
+app.MapPost("/api/customers/{customerId:guid}/security/tenant-access/{grantId:guid}/revoke", (Guid customerId, Guid grantId, IAppStore store, IAuditWriter audit, HttpContext http) =>
+{
+    var actor = Actor(http);
+    if (!RequirePermission(store, customerId, null, actor, "security.manage", out var error)) return error;
+    var grant = store.TenantAccessGrants.SingleOrDefault(x => x.CustomerId == customerId && x.Id == grantId);
+    if (grant is null) return Results.NotFound(new { error = "Grant not found." });
+    grant.Status = TenantAccessStatus.Revoked;
+    audit.Write(customerId, null, "TENANT_ACCESS_REVOKED", nameof(TenantAccessGrant), grant.Id, new { grant.UserId, revokedBy = actor });
+    return Results.Ok(grant);
+});
+
+app.MapPost("/api/customers/{customerId:guid}/security/tenant-access/{grantId:guid}/restore", (Guid customerId, Guid grantId, IAppStore store, IAuditWriter audit, HttpContext http) =>
+{
+    var actor = Actor(http);
+    if (!RequirePermission(store, customerId, null, actor, "security.manage", out var error)) return error;
+    var grant = store.TenantAccessGrants.SingleOrDefault(x => x.CustomerId == customerId && x.Id == grantId);
+    if (grant is null) return Results.NotFound(new { error = "Grant not found." });
+    grant.Status = TenantAccessStatus.Active;
+    audit.Write(customerId, null, "TENANT_ACCESS_RESTORED", nameof(TenantAccessGrant), grant.Id, new { grant.UserId, restoredBy = actor });
+    return Results.Ok(grant);
+});
+
 app.MapPost("/api/customers/{customerId:guid}/security/secrets", (Guid customerId, SecretVaultReferenceRequest request, IAppStore store, IAuditWriter audit, HttpContext http) =>
 {
     var actor = Actor(http);

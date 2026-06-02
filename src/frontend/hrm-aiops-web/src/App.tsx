@@ -1,7 +1,8 @@
 import {
   Activity, AlertTriangle, Bot, Building2, CheckCircle2, ChevronDown,
-  FileText, GitCompare, Layers3, LogOut, Moon, Plus, RefreshCw, Rocket,
-  Shield, ShieldCheck, Sun, Users, Lock, Bell
+  FileText, GitCompare, Key, Layers3, LogOut, Moon, Plus, RefreshCw,
+  Rocket, Shield, ShieldCheck, Sun, Trash2, UserCheck, UserCog,
+  UserMinus, UserPlus, Users, Lock, Bell
 } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
@@ -15,7 +16,7 @@ import {
 import { Lang, LANGS, makeT } from './i18n';
 
 type LoadState = 'idle' | 'loading' | 'error';
-type Tab = 'dashboard' | 'documents' | 'issues' | 'ai' | 'apply' | 'audit';
+type Tab = 'dashboard' | 'documents' | 'issues' | 'ai' | 'apply' | 'audit' | 'users';
 type Engineer = { userId: string; name: string };
 
 // ── Root ──────────────────────────────────────────────────────────
@@ -232,6 +233,7 @@ function Workspace({ engineer, onLogout, dark, onToggleDark, lang, setLang, t }:
     { id: 'ai',        label: t('nav.ai'),         icon: <Bot size={13} /> },
     { id: 'apply',     label: t('nav.apply'),      icon: <Rocket size={13} /> },
     { id: 'audit',     label: t('nav.audit'),      icon: <Shield size={13} /> },
+    { id: 'users',     label: t('nav.users'),      icon: <UserCog size={13} /> },
   ];
 
   const subNav: Record<Tab, string[]> = {
@@ -241,6 +243,7 @@ function Workspace({ engineer, onLogout, dark, onToggleDark, lang, setLang, t }:
     ai:        [0,1,2].map(i => t(`subnav.ai.${i}`)),
     apply:     [0,1,2,3].map(i => t(`subnav.apply.${i}`)),
     audit:     [0,1,2].map(i => t(`subnav.audit.${i}`)),
+    users:     [t('users.access'), t('users.roles.title')],
   };
 
   const pageTitles: Record<Tab, [string, string]> = {
@@ -250,6 +253,7 @@ function Workspace({ engineer, onLogout, dark, onToggleDark, lang, setLang, t }:
     ai:        [t('page.ai.title'),        t('page.ai.sub')],
     apply:     [t('page.apply.title'),     t('page.apply.sub')],
     audit:     [t('page.audit.title'),     t('page.audit.sub')],
+    users:     [t('page.users.title'),     t('page.users.sub')],
   };
 
   const [title, subtitle] = pageTitles[tab];
@@ -404,6 +408,9 @@ function Workspace({ engineer, onLogout, dark, onToggleDark, lang, setLang, t }:
             )}
             {tab === 'audit' && (
               <AuditTab audits={audits} signOffs={signOffs} traceChains={traceChains} t={t} />
+            )}
+            {tab === 'users' && (
+              <UsersTab customerId={customerId} engineer={engineer} t={t} />
             )}
           </div>
         </div>
@@ -917,6 +924,252 @@ function AuditTab({ audits, signOffs, traceChains, t }: any) {
           <ItemList empty="Chưa có audit log" items={audits.slice(0, 10).map((a: AuditLog) => ({
             key: a.id, title: a.action, meta: `${a.entityType} · ${new Date(a.createdAt).toLocaleString('vi-VN')}`
           }))} />
+        </Card>
+      </div>
+    </>
+  );
+}
+
+// ── Users Tab ────────────────────────────────────────────────────
+type AccessGrant = { id: string; userId: string; roleKey: string; status: string; grantedBy?: string; expiresAt?: string; createdAt: string };
+type SecurityRole = { id: string; roleKey: string; name: string; description: string };
+type RolePermission = { roleKey: string; permissionKey: string };
+type UserRoleAssign = { userId: string; roleKey: string };
+
+function UsersTab({ customerId, engineer, t }: { customerId: string; engineer: any; t: (k: string) => string }) {
+  const [grants, setGrants] = useState<AccessGrant[]>([]);
+  const [roles, setRoles] = useState<SecurityRole[]>([]);
+  const [rolePerms, setRolePerms] = useState<RolePermission[]>([]);
+  const [assignments, setAssignments] = useState<UserRoleAssign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [msg, setMsg] = useState('');
+
+  async function load() {
+    if (!customerId) return;
+    setLoading(true); setError('');
+    try {
+      const [ga, ro] = await Promise.all([
+        api.get<AccessGrant[]>(`/api/customers/${customerId}/security/tenant-access`),
+        api.get<{ roles: SecurityRole[]; rolePermissions: RolePermission[]; assignments: UserRoleAssign[] }>(`/api/customers/${customerId}/security/roles`)
+      ]);
+      setGrants(ga);
+      setRoles(ro.roles); setRolePerms(ro.rolePermissions); setAssignments(ro.assignments);
+    } catch (e: any) {
+      const body = typeof e?.message === 'string' ? e.message : '';
+      if (body.includes('403') || body.includes('permission')) setError(t('users.no.perm'));
+      else setError(body || 'Error loading users');
+    }
+    setLoading(false);
+  }
+
+  useEffect(() => { load(); }, [customerId]);
+
+  async function grantAccess(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const userId = String(fd.get('userId') ?? '').trim();
+    const roleKey = String(fd.get('roleKey') ?? '').trim();
+    const expiresAt = String(fd.get('expiresAt') ?? '').trim() || undefined;
+    try {
+      await api.post(`/api/customers/${customerId}/security/tenant-access`, { userId, roleKey, expiresAt: expiresAt || null });
+      setMsg(`✓ Đã cấp quyền cho ${userId}`);
+      await load();
+      (e.target as HTMLFormElement).reset();
+    } catch (err: any) { setMsg(`✗ ${err.message}`); }
+  }
+
+  async function revoke(grantId: string, userId: string) {
+    try {
+      await api.post(`/api/customers/${customerId}/security/tenant-access/${grantId}/revoke`);
+      setMsg(`✓ Đã thu hồi quyền của ${userId}`);
+      await load();
+    } catch (err: any) { setMsg(`✗ ${err.message}`); }
+  }
+
+  async function restore(grantId: string, userId: string) {
+    try {
+      await api.post(`/api/customers/${customerId}/security/tenant-access/${grantId}/restore`);
+      setMsg(`✓ Đã khôi phục quyền cho ${userId}`);
+      await load();
+    } catch (err: any) { setMsg(`✗ ${err.message}`); }
+  }
+
+  const statusColor = (s: string) => s === 'Active' ? 'b-green' : s === 'Revoked' ? 'b-red' : 'b-yellow';
+
+  // Group permissions by role
+  const rolePermMap: Record<string, string[]> = {};
+  rolePerms.forEach(rp => { if (!rolePermMap[rp.roleKey]) rolePermMap[rp.roleKey] = []; rolePermMap[rp.roleKey].push(rp.permissionKey); });
+
+  return (
+    <>
+      {/* Hint banner */}
+      <div style={{ background:'var(--primary-bg)', border:'1px solid var(--primary-bd)', borderRadius:'var(--r-sm)', padding:'10px 14px', fontSize:12, color:'var(--primary)', display:'flex', alignItems:'center', gap:8 }}>
+        <Key size={14} /> {t('users.hint')}
+      </div>
+
+      {msg && (
+        <div style={{ background: msg.startsWith('✓') ? 'var(--success-bg)' : 'var(--danger-bg)', border: `1px solid ${msg.startsWith('✓') ? 'var(--success-bd)' : 'var(--danger-bd)'}`, borderRadius:'var(--r-sm)', padding:'8px 14px', fontSize:12, color: msg.startsWith('✓') ? 'var(--success)' : 'var(--danger)' }}>
+          {msg}
+        </div>
+      )}
+
+      <div className="g2">
+        {/* Access grants table */}
+        <div className="card" style={{ gridColumn: '1 / -1' }}>
+          <div className="card-header">
+            <div className="card-header-left">
+              <Users size={14} />
+              <div>
+                <h3>{t('users.access')}</h3>
+                <p>{t('users.access.sub')}</p>
+              </div>
+            </div>
+            <span className="card-count">{grants.length}</span>
+          </div>
+          <div className="card-body" style={{ padding: 0 }}>
+            {loading && <div style={{ padding:20, textAlign:'center', color:'var(--text-3)', fontSize:13 }}>Loading...</div>}
+            {error && <div style={{ padding:16, color:'var(--warn)', fontSize:12 }}>{error}</div>}
+            {!loading && !error && (
+              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                <thead>
+                  <tr style={{ background:'var(--bg)', borderBottom:'1px solid var(--border)' }}>
+                    {[t('users.userid'), t('users.rolekey'), t('users.status'), t('users.grantedby'), t('users.expires'), t('users.actions')].map(h => (
+                      <th key={h} style={{ padding:'9px 14px', textAlign:'left', fontWeight:600, fontSize:11, color:'var(--text-3)', textTransform:'uppercase', letterSpacing:'.05em' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {grants.length === 0 && (
+                    <tr><td colSpan={6} style={{ padding:24, textAlign:'center', color:'var(--text-3)' }}>{t('users.empty')}</td></tr>
+                  )}
+                  {grants.map(g => (
+                    <tr key={g.id} style={{ borderBottom:'1px solid var(--border)' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = '')}>
+                      <td style={{ padding:'10px 14px' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                          <div style={{ width:28, height:28, borderRadius:'50%', background:'var(--primary)', color:'#fff', fontSize:11, fontWeight:700, display:'grid', placeItems:'center', flexShrink:0 }}>
+                            {g.userId[0]?.toUpperCase()}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight:600 }}>{g.userId}</div>
+                            {g.userId === engineer.userId && <div style={{ fontSize:10, color:'var(--primary)' }}>● You</div>}
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding:'10px 14px' }}>
+                        <span className="badge b-blue">{g.roleKey}</span>
+                      </td>
+                      <td style={{ padding:'10px 14px' }}>
+                        <span className={`badge ${statusColor(g.status)}`}>{g.status}</span>
+                      </td>
+                      <td style={{ padding:'10px 14px', color:'var(--text-3)', fontSize:12 }}>{g.grantedBy ?? '—'}</td>
+                      <td style={{ padding:'10px 14px', color:'var(--text-3)', fontSize:12 }}>
+                        {g.expiresAt ? new Date(g.expiresAt).toLocaleDateString() : '∞'}
+                      </td>
+                      <td style={{ padding:'10px 14px' }}>
+                        <div style={{ display:'flex', gap:6 }}>
+                          {g.status !== 'Revoked' ? (
+                            <button className="btn btn-sm btn-danger" onClick={() => revoke(g.id, g.userId)}>
+                              <UserMinus size={11} /> {t('users.revoke')}
+                            </button>
+                          ) : (
+                            <button className="btn btn-sm btn-success" onClick={() => restore(g.id, g.userId)}>
+                              <UserCheck size={11} /> {t('users.restore')}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="g2">
+        {/* Grant new access form */}
+        <Card title={t('users.grant.title')} icon={<UserPlus size={14} />}>
+          <form className="f-stack" onSubmit={grantAccess}>
+            <div className="f-field">
+              <label>{t('users.userid')}</label>
+              <input name="userId" placeholder={t('users.userid.ph')} required />
+            </div>
+            <div className="f-field">
+              <label>{t('users.rolekey')}</label>
+              <select name="roleKey" defaultValue="consultant">
+                <option value="consultant">consultant</option>
+                <option value="security.admin">security.admin</option>
+                <option value="platform.admin">platform.admin</option>
+                <option value="support.lead">support.lead</option>
+                <option value="release.manager">release.manager</option>
+                <option value="viewer">viewer</option>
+                {roles.map(r => <option key={r.id} value={r.roleKey}>{r.roleKey} — {r.name}</option>)}
+              </select>
+            </div>
+            <div className="f-field">
+              <label>{t('users.expires')}</label>
+              <input name="expiresAt" type="datetime-local" placeholder={t('users.expires.ph')} />
+            </div>
+            <button className="btn btn-navy"><UserPlus size={13} /> {t('users.grant.btn')}</button>
+          </form>
+
+          {/* Current user info */}
+          <div style={{ marginTop:8, padding:'10px 12px', background:'var(--bg)', borderRadius:'var(--r-sm)', border:'1px solid var(--border)', fontSize:12 }}>
+            <div style={{ fontWeight:600, marginBottom:4, color:'var(--text-2)' }}>Đang đăng nhập</div>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <div style={{ width:24, height:24, borderRadius:'50%', background:'var(--primary)', color:'#fff', fontSize:10, fontWeight:700, display:'grid', placeItems:'center' }}>
+                {engineer.name[0].toUpperCase()}
+              </div>
+              <div>
+                <div style={{ fontWeight:600 }}>{engineer.name}</div>
+                <div style={{ color:'var(--text-3)' }}>ID: {engineer.userId}</div>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Roles */}
+        <Card title={t('users.roles.title')} icon={<Shield size={14} />} count={roles.length}>
+          {roles.length === 0 && <div className="empty-msg">{t('users.roles.empty')}</div>}
+          <div className="item-list">
+            {roles.map(role => (
+              <div key={role.id} className="item">
+                <div className="item-body">
+                  <span className="item-title">{role.name}</span>
+                  <span className="item-meta">
+                    {role.roleKey} · {rolePermMap[role.roleKey]?.length ?? 0} permissions
+                  </span>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:4, marginTop:4 }}>
+                    {(rolePermMap[role.roleKey] ?? []).map(p => (
+                      <span key={p} className="badge b-default" style={{ fontSize:10 }}>{p}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* User-role assignments */}
+          {assignments.length > 0 && (
+            <>
+              <div style={{ fontSize:12, fontWeight:600, color:'var(--text-2)', marginTop:8 }}>Phân quyền hiện tại</div>
+              <div className="item-list">
+                {assignments.slice(0, 10).map((a, i) => (
+                  <div key={i} className="item">
+                    <div className="item-body">
+                      <span className="item-title">{a.userId}</span>
+                      <span className="item-meta">{a.roleKey}</span>
+                    </div>
+                    <span className="badge b-blue">{a.roleKey}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </Card>
       </div>
     </>
