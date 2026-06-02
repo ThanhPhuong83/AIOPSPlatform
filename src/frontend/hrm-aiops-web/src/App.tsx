@@ -12,6 +12,7 @@ import {
   Project, Requirement, RegressionTestPlan, RegressionTestRun,
   ReleaseDraft, ReleaseReadinessReport, SnapshotDiff, TraceChain, UrsDocument
 } from './api';
+import { Lang, LANGS, makeT } from './i18n';
 
 type LoadState = 'idle' | 'loading' | 'error';
 type Tab = 'dashboard' | 'documents' | 'issues' | 'ai' | 'apply' | 'audit';
@@ -20,26 +21,35 @@ type Engineer = { userId: string; name: string };
 // ── Root ──────────────────────────────────────────────────────────
 export function App() {
   const [engineer, setEngineer] = useState<Engineer | null>(null);
-  const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark');
+  const [dark, setDark]   = useState(() => localStorage.getItem('theme') === 'dark');
+  const [lang, setLang]   = useState<Lang>(() => (localStorage.getItem('lang') as Lang) || 'vi');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
     localStorage.setItem('theme', dark ? 'dark' : 'light');
   }, [dark]);
 
-  if (!engineer) return <LoginPage onLogin={setEngineer} dark={dark} onToggleDark={() => setDark(d => !d)} />;
-  return <Workspace engineer={engineer} onLogout={() => setEngineer(null)} dark={dark} onToggleDark={() => setDark(d => !d)} />;
+  useEffect(() => { localStorage.setItem('lang', lang); }, [lang]);
+
+  const t = useMemo(() => makeT(lang), [lang]);
+
+  if (!engineer)
+    return <LoginPage onLogin={setEngineer} dark={dark} onToggleDark={() => setDark(d => !d)} lang={lang} setLang={setLang} t={t} />;
+  return <Workspace engineer={engineer} onLogout={() => setEngineer(null)} dark={dark} onToggleDark={() => setDark(d => !d)} lang={lang} setLang={setLang} t={t} />;
 }
 
 // ── Login ─────────────────────────────────────────────────────────
-function LoginPage({ onLogin, dark, onToggleDark }: { onLogin: (e: Engineer) => void; dark: boolean; onToggleDark: () => void }) {
+function LoginPage({ onLogin, dark, onToggleDark, lang, setLang, t }: {
+  onLogin: (e: Engineer) => void; dark: boolean; onToggleDark: () => void;
+  lang: Lang; setLang: (l: Lang) => void; t: (k: string) => string;
+}) {
   const [err, setErr] = useState('');
   function handle(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const name = String(fd.get('name') ?? '').trim();
     const pass = String(fd.get('password') ?? '').trim();
-    if (!name || !pass) { setErr('Vui lòng nhập đầy đủ thông tin.'); return; }
+    if (!name || !pass) { setErr(t('login.error')); return; }
     const userId = name.toLowerCase().replace(/\s+/g, '.');
     setCurrentUser(userId);
     onLogin({ userId, name });
@@ -47,35 +57,48 @@ function LoginPage({ onLogin, dark, onToggleDark }: { onLogin: (e: Engineer) => 
   return (
     <div className="login-bg">
       <div className="login-card">
+        {/* Language picker */}
+        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+          {LANGS.map(l => (
+            <button key={l.code} onClick={() => setLang(l.code)}
+              style={{ padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+                border: `1px solid ${lang === l.code ? 'var(--primary)' : 'var(--border-2)'}`,
+                background: lang === l.code ? 'var(--primary)' : 'transparent',
+                color: lang === l.code ? '#fff' : 'var(--text-2)', cursor: 'pointer' }}>
+              {l.flag} {l.code.toUpperCase()}
+            </button>
+          ))}
+        </div>
+
         <div className="login-logo">
           <div className="login-logo-mark">
             <Building2 size={26} color="#fff" />
           </div>
           <div>
-            <h1>HRM AI Ops Platform</h1>
-            <p>Nền tảng vận hành HRM tích hợp AI</p>
+            <h1>{t('login.title')}</h1>
+            <p>{t('login.subtitle')}</p>
           </div>
         </div>
         <div className="login-heading">
-          <h2>Xin chào, Kỹ sư!</h2>
-          <p>Đăng nhập để truy cập hệ thống quản lý khách hàng của bạn.</p>
+          <h2>{t('login.heading')}</h2>
+          <p>{t('login.subheading')}</p>
         </div>
         <form className="login-form" onSubmit={handle}>
           <div>
-            <label className="f-label">Tên kỹ sư</label>
-            <input name="name" placeholder="Nguyễn Văn A" autoFocus />
+            <label className="f-label">{t('login.name')}</label>
+            <input name="name" placeholder={t('login.name.ph')} autoFocus />
           </div>
           <div>
-            <label className="f-label">Mật khẩu</label>
-            <input name="password" type="password" placeholder="••••••••" />
+            <label className="f-label">{t('login.password')}</label>
+            <input name="password" type="password" placeholder={t('login.password.ph')} />
           </div>
           {err && <p style={{ color: 'var(--danger)', fontSize: 12 }}>{err}</p>}
-          <button type="submit" className="login-btn"><Lock size={15} /> Đăng nhập</button>
+          <button type="submit" className="login-btn"><Lock size={15} /> {t('login.btn')}</button>
         </form>
-        <p className="login-note">HRM AI Ops · v1.0 · Phase 1–17 Scaffold</p>
-        <button className="theme-toggle-login" onClick={onToggleDark} title="Toggle theme">
+        <p className="login-note">{t('login.footer')}</p>
+        <button className="theme-toggle-login" onClick={onToggleDark}>
           {dark ? <Sun size={16} /> : <Moon size={16} />}
-          {dark ? 'Chế độ sáng' : 'Chế độ tối'}
+          {dark ? t('login.light') : t('login.dark')}
         </button>
       </div>
     </div>
@@ -83,7 +106,10 @@ function LoginPage({ onLogin, dark, onToggleDark }: { onLogin: (e: Engineer) => 
 }
 
 // ── Workspace ─────────────────────────────────────────────────────
-function Workspace({ engineer, onLogout, dark, onToggleDark }: { engineer: Engineer; onLogout: () => void; dark: boolean; onToggleDark: () => void }) {
+function Workspace({ engineer, onLogout, dark, onToggleDark, lang, setLang, t }: {
+  engineer: Engineer; onLogout: () => void; dark: boolean; onToggleDark: () => void;
+  lang: Lang; setLang: (l: Lang) => void; t: (k: string) => string;
+}) {
   const [tab, setTab] = useState<Tab>('dashboard');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -200,30 +226,30 @@ function Workspace({ engineer, onLogout, dark, onToggleDark }: { engineer: Engin
   const approvedDocs = [...requirements, ...urs, ...blueprints, ...configs].filter(x => x.status === 'Approved').length;
 
   const navMain: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: 'dashboard', label: 'Dashboard',     icon: <Activity size={13} /> },
-    { id: 'documents', label: 'Tài liệu',      icon: <FileText size={13} /> },
-    { id: 'issues',    label: 'Issues & Ops',  icon: <AlertTriangle size={13} /> },
-    { id: 'ai',        label: 'AI Ops',         icon: <Bot size={13} /> },
-    { id: 'apply',     label: 'Apply & Test',   icon: <Rocket size={13} /> },
-    { id: 'audit',     label: 'Audit',          icon: <Shield size={13} /> },
+    { id: 'dashboard', label: t('nav.dashboard'), icon: <Activity size={13} /> },
+    { id: 'documents', label: t('nav.documents'), icon: <FileText size={13} /> },
+    { id: 'issues',    label: t('nav.issues'),    icon: <AlertTriangle size={13} /> },
+    { id: 'ai',        label: t('nav.ai'),         icon: <Bot size={13} /> },
+    { id: 'apply',     label: t('nav.apply'),      icon: <Rocket size={13} /> },
+    { id: 'audit',     label: t('nav.audit'),      icon: <Shield size={13} /> },
   ];
 
   const subNav: Record<Tab, string[]> = {
-    dashboard: ['Tổng quan', 'Tạo khách hàng', 'Tạo dự án'],
-    documents: ['Requirements', 'URS', 'Blueprints', 'Config Specs'],
-    issues:    ['Danh sách', 'Fix Proposals', 'Test Plans', 'Release Drafts'],
-    ai:        ['Đề xuất AI', 'AI Runs', 'Prompt Templates'],
-    apply:     ['Dry Run / Apply', 'Apply Runs', 'Regression', 'Snapshots'],
-    audit:     ['Traceability', 'Sign-offs', 'Audit Logs'],
+    dashboard: [0,1,2].map(i => t(`subnav.dashboard.${i}`)),
+    documents: [0,1,2,3].map(i => t(`subnav.documents.${i}`)),
+    issues:    [0,1,2,3].map(i => t(`subnav.issues.${i}`)),
+    ai:        [0,1,2].map(i => t(`subnav.ai.${i}`)),
+    apply:     [0,1,2,3].map(i => t(`subnav.apply.${i}`)),
+    audit:     [0,1,2].map(i => t(`subnav.audit.${i}`)),
   };
 
   const pageTitles: Record<Tab, [string, string]> = {
-    dashboard: ['Dashboard', `Dự liệu từ API · cập nhật ${new Date().toLocaleDateString('vi-VN')}`],
-    documents: ['Vòng đời tài liệu', 'REQ → URS → Blueprint → Config Spec'],
-    issues:    ['Issues & Vận hành', 'Quản lý sự cố · AI chẩn đoán · Fix proposals'],
-    ai:        ['AI Ops', 'Đề xuất AI · Lịch sử chạy · Prompt templates'],
-    apply:     ['Apply & Test', 'Controlled apply · Test/UAT only · Không apply production'],
-    audit:     ['Audit & Traceability', 'Sign-offs · Audit logs · Traceability chains'],
+    dashboard: [t('page.dashboard.title'), `${t('page.dashboard.sub')} ${new Date().toLocaleDateString()}`],
+    documents: [t('page.documents.title'), t('page.documents.sub')],
+    issues:    [t('page.issues.title'),    t('page.issues.sub')],
+    ai:        [t('page.ai.title'),        t('page.ai.sub')],
+    apply:     [t('page.apply.title'),     t('page.apply.sub')],
+    audit:     [t('page.audit.title'),     t('page.audit.sub')],
   };
 
   const [title, subtitle] = pageTitles[tab];
@@ -268,10 +294,22 @@ function Workspace({ engineer, onLogout, dark, onToggleDark }: { engineer: Engin
             {projects.map(p => <option key={p.id} value={p.id}>{p.code}</option>)}
           </select>
           <div className="nav1-divider" />
-          <button className="theme-toggle" onClick={onToggleDark} title={dark ? 'Chuyển sang Light' : 'Chuyển sang Dark'}>
+          {/* Language selector */}
+          {LANGS.map(l => (
+            <button key={l.code} onClick={() => setLang(l.code)} className="lang-btn"
+              style={{ background: lang === l.code ? 'rgba(255,255,255,.25)' : 'rgba(255,255,255,.08)',
+                border: `1px solid ${lang === l.code ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.15)'}`,
+                color: lang === l.code ? '#fff' : 'rgba(255,255,255,.6)',
+                padding: '3px 8px', borderRadius: 4, cursor: 'pointer',
+                fontSize: 11, fontWeight: lang === l.code ? 700 : 400 }}>
+              {l.flag} {l.code.toUpperCase()}
+            </button>
+          ))}
+          <div className="nav1-divider" />
+          <button className="theme-toggle" onClick={onToggleDark} title={dark ? t('top.light') : t('top.dark')}>
             {dark ? <Sun size={15} /> : <Moon size={15} />}
           </button>
-          <div className="nav1-user" onClick={onLogout} title="Đăng xuất">
+          <div className="nav1-user" onClick={onLogout} title="Logout">
             <div className="nav1-avatar">{engineer.name[0].toUpperCase()}</div>
             <span>{engineer.name}</span>
             <LogOut size={12} style={{ opacity: .7 }} />
@@ -287,13 +325,13 @@ function Workspace({ engineer, onLogout, dark, onToggleDark }: { engineer: Engin
         <div className="nav2-actions">
           <div style={{ fontSize: 12, color: state === 'loading' ? '#60a5fa' : state === 'error' ? '#f87171' : '#6ee7b7', display: 'flex', alignItems: 'center', gap: 5 }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: state === 'loading' ? '#60a5fa' : state === 'error' ? '#f87171' : '#4ade80', display: 'inline-block' }} />
-            {state === 'loading' ? 'Đang tải...' : state === 'error' ? 'Lỗi' : message || 'Sẵn sàng'}
+            {state === 'loading' ? t('top.loading') : state === 'error' ? t('top.error') : message || t('top.ready')}
           </div>
           <button className="btn-top btn-top-solid" onClick={() => refreshAll()}>
-            <RefreshCw size={12} /> Làm mới
+            <RefreshCw size={12} /> {t('top.refresh')}
           </button>
           <button className="btn-top btn-top-outline">
-            <Bell size={12} /> Thông báo
+            <Bell size={12} /> {t('top.notify')}
           </button>
         </div>
       </div>
@@ -319,27 +357,27 @@ function Workspace({ engineer, onLogout, dark, onToggleDark }: { engineer: Engin
             customers={customers} projects={projects}
             customerId={customerId} projectId={projectId}
             openIssues={openIssues} pendingAi={pendingAi} approvedDocs={approvedDocs}
-            submit={submit}
+            submit={submit} t={t}
           />
         )}
         {tab === 'documents' && (
           <DocumentsTab
             requirements={requirements} urs={urs} blueprints={blueprints} configs={configs}
             customerId={customerId} projectId={projectId}
-            submit={submit} signOff={signOff}
+            submit={submit} signOff={signOff} t={t}
           />
         )}
         {tab === 'issues' && (
           <IssuesTab
             issues={issues} fixProposals={fixProposals} testPlans={testPlans}
             releaseDrafts={releaseDrafts} configs={configs}
-            customerId={customerId} projectId={projectId} submit={submit}
+            customerId={customerId} projectId={projectId} submit={submit} t={t}
           />
         )}
         {tab === 'ai' && (
           <AiTab
             aiProposals={aiProposals} aiRuns={aiRuns} promptTemplates={promptTemplates}
-            customerId={customerId} projectId={projectId} submit={submit}
+            customerId={customerId} projectId={projectId} submit={submit} t={t}
           />
         )}
         {tab === 'apply' && (
@@ -347,11 +385,11 @@ function Workspace({ engineer, onLogout, dark, onToggleDark }: { engineer: Engin
             applyRuns={applyRuns} snapshots={snapshots} snapshotDiffs={snapshotDiffs}
             regressionRuns={regressionRuns} readinessReports={readinessReports}
             environments={environments} connectors={connectors} fixProposals={fixProposals}
-            customerId={customerId} projectId={projectId} submit={submit}
+            customerId={customerId} projectId={projectId} submit={submit} t={t}
           />
         )}
         {tab === 'audit' && (
-          <AuditTab audits={audits} signOffs={signOffs} traceChains={traceChains} />
+          <AuditTab audits={audits} signOffs={signOffs} traceChains={traceChains} t={t} />
         )}
       </div>
     </div>
@@ -359,7 +397,7 @@ function Workspace({ engineer, onLogout, dark, onToggleDark }: { engineer: Engin
 }
 
 // ── Dashboard Tab ─────────────────────────────────────────────────
-function DashboardTab({ engineer, selCustomer, selProject, requirements, urs, blueprints, configs, issues, applyRuns, readinessReports, aiProposals, audits, modules, customers, projects, customerId, projectId, openIssues, pendingAi, approvedDocs, submit }: any) {
+function DashboardTab({ engineer, selCustomer, selProject, requirements, urs, blueprints, configs, issues, applyRuns, readinessReports, aiProposals, audits, modules, customers, projects, customerId, projectId, openIssues, pendingAi, approvedDocs, submit, t }: any) {
   const totalDocs = requirements.length + urs.length + blueprints.length + configs.length;
   const closedIssues = issues.filter((i: Issue) => i.status === 'Closed').length;
 
@@ -385,9 +423,9 @@ function DashboardTab({ engineer, selCustomer, selProject, requirements, urs, bl
           <div className="summary-big">{totalDocs}</div>
           <div className="reminder-list">
             {[
-              { label: 'Requirements', val: requirements.length, color: '#22c55e' },
-              { label: 'URS Documents', val: urs.length, color: '#3b82f6' },
-              { label: 'Blueprints', val: blueprints.length, color: '#8b5cf6' },
+              { label: t('doc.req.title'), val: requirements.length, color: '#22c55e' },
+              { label: t('doc.urs.title'), val: urs.length, color: '#3b82f6' },
+              { label: t('doc.bp.title'), val: blueprints.length, color: '#8b5cf6' },
               { label: 'Config Specs', val: configs.length, color: '#f59e0b' },
             ].map(r => (
               <div className="summary-row" key={r.label}>
@@ -452,12 +490,12 @@ function DashboardTab({ engineer, selCustomer, selProject, requirements, urs, bl
         <Card title="Nhắc việc" sub="Cần xử lý" icon={<Bell size={14} />} link="Xem chi tiết >>">
           <div className="reminder-list">
             {[
-              { label: 'AI chờ duyệt', val: pendingAi, cls: pendingAi > 0 ? 'warn' : '' },
-              { label: 'Issues đang mở', val: openIssues, cls: openIssues > 0 ? 'warn' : '' },
-              { label: 'Docs chưa ký', val: [...requirements, ...urs, ...blueprints, ...configs].filter((d: any) => d.status === 'Draft').length, cls: '' },
-              { label: 'Apply runs pending', val: applyRuns.filter((a: ApplyRun) => a.status === 'DryRunSucceeded').length, cls: '' },
-              { label: 'Release ready', val: readinessReports.filter((r: ReleaseReadinessReport) => r.status === 'Ready').length, cls: 'success' },
-              { label: 'Audit logs hôm nay', val: audits.length, cls: '' },
+              { label: t('dash.rem.ai'), val: pendingAi, cls: pendingAi > 0 ? 'warn' : '' },
+              { label: t('dash.stat.issues'), val: openIssues, cls: openIssues > 0 ? 'warn' : '' },
+              { label: t('dash.rem.drafts'), val: [...requirements, ...urs, ...blueprints, ...configs].filter((d: any) => d.status === 'Draft').length, cls: '' },
+              { label: t('dash.rem.apply'), val: applyRuns.filter((a: ApplyRun) => a.status === 'DryRunSucceeded').length, cls: '' },
+              { label: t('dash.rem.release'), val: readinessReports.filter((r: ReleaseReadinessReport) => r.status === 'Ready').length, cls: 'success' },
+              { label: t('dash.rem.audit'), val: audits.length, cls: '' },
             ].map(r => (
               <div className="reminder-row" key={r.label}>
                 <span className="reminder-label">{r.label}</span>
@@ -472,7 +510,7 @@ function DashboardTab({ engineer, selCustomer, selProject, requirements, urs, bl
       <div className="g2">
         <Card title="Thêm khách hàng mới" sub="" icon={<Users size={14} />}>
           <SmartForm
-            fields={[['code','Code','ACME'],['name','Tên KH','ACME HR Co.'],['industry','Ngành','Manufacturing']]}
+            fields={[[t('common.code'),'Code','ACME'],[t('common.name'),t('common.name'),'ACME HR Co.'],[t('common.industry'),t('common.industry'),'Manufacturing']]}
             submitLabel="Tạo khách hàng"
             onSubmit={b => submit(() => api.post('/api/customers', b), 'Đã tạo khách hàng')}
           />
@@ -484,7 +522,7 @@ function DashboardTab({ engineer, selCustomer, selProject, requirements, urs, bl
         <Card title="Thêm dự án mới" sub="" icon={<FileText size={14} />}>
           <SmartForm
             disabled={!customerId}
-            fields={[['code','Code','HRM-OPS'],['name','Tên dự án','HRM Operations'],['hrmProductName','Sản phẩm HRM','Custom HRM']]}
+            fields={[[t('common.code'),'Code','HRM-OPS'],[t('common.name'),t('common.name'),'HRM Operations'],[t('common.hrm'),t('common.hrm'),'Custom HRM']]}
             submitLabel="Tạo dự án"
             onSubmit={b => submit(() => api.post(`/api/customers/${customerId}/projects`, b), 'Đã tạo dự án')}
           />
@@ -499,7 +537,7 @@ function DashboardTab({ engineer, selCustomer, selProject, requirements, urs, bl
 }
 
 // ── Documents Tab ─────────────────────────────────────────────────
-function DocumentsTab({ requirements, urs, blueprints, configs, customerId, projectId, submit, signOff }: any) {
+function DocumentsTab({ requirements, urs, blueprints, configs, customerId, projectId, submit, signOff, t }: any) {
   return (
     <>
       <div className="g2">
@@ -525,7 +563,7 @@ function DocumentsTab({ requirements, urs, blueprints, configs, customerId, proj
                 <button className="btn btn-sm" onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/requirements/${r.id}/generate-urs`), 'Đã tạo URS proposal')}>
                   <Bot size={11} /> Gen URS
                 </button>
-                <button className="btn btn-sm" disabled={r.status === 'Approved'} onClick={() => signOff('requirements', r.id, 'Requirement đã ký')}>
+                <button className="btn btn-sm" disabled={r.status === 'Approved'} onClick={() => signOff(t('doc.req.title'), r.id, 'Requirement đã ký')}>
                   <CheckCircle2 size={11} /> Ký
                 </button>
               </div>
@@ -561,7 +599,7 @@ function DocumentsTab({ requirements, urs, blueprints, configs, customerId, proj
                 <button className="btn btn-sm" onClick={() => submit(() => api.post(`/api/customers/${customerId}/projects/${projectId}/blueprints/${b.id}/generate-config-spec`, { moduleName: 'Leave Management' }), 'Đã tạo Config Spec proposal')}>
                   <Bot size={11} /> Gen CFG
                 </button>
-                <button className="btn btn-sm" disabled={b.status === 'Approved'} onClick={() => signOff('blueprints', b.id, 'Blueprint đã ký')}>
+                <button className="btn btn-sm" disabled={b.status === 'Approved'} onClick={() => signOff(t('doc.bp.title'), b.id, 'Blueprint đã ký')}>
                   <CheckCircle2 size={11} /> Ký
                 </button>
               </div>
@@ -589,7 +627,7 @@ function DocumentsTab({ requirements, urs, blueprints, configs, customerId, proj
 }
 
 // ── Issues Tab ────────────────────────────────────────────────────
-function IssuesTab({ issues, fixProposals, testPlans, releaseDrafts, configs, customerId, projectId, submit }: any) {
+function IssuesTab({ issues, fixProposals, testPlans, releaseDrafts, configs, customerId, projectId, submit, t }: any) {
   return (
     <>
       <div className="g2">
@@ -676,7 +714,7 @@ function IssuesTab({ issues, fixProposals, testPlans, releaseDrafts, configs, cu
 }
 
 // ── AI Tab ────────────────────────────────────────────────────────
-function AiTab({ aiProposals, aiRuns, promptTemplates, customerId, projectId, submit }: any) {
+function AiTab({ aiProposals, aiRuns, promptTemplates, customerId, projectId, submit, t }: any) {
   return (
     <>
       <Card title="Đề xuất AI — Chờ duyệt" sub={`${aiProposals.filter((a: AiProposal) => a.status === 'PendingReview').length} pending`} icon={<Bot size={14} />}>
@@ -745,7 +783,7 @@ function AiTab({ aiProposals, aiRuns, promptTemplates, customerId, projectId, su
 }
 
 // ── Apply Tab ─────────────────────────────────────────────────────
-function ApplyTab({ applyRuns, snapshots, snapshotDiffs, regressionRuns, readinessReports, environments, connectors, fixProposals, customerId, projectId, submit }: any) {
+function ApplyTab({ applyRuns, snapshots, snapshotDiffs, regressionRuns, readinessReports, environments, connectors, fixProposals, customerId, projectId, submit, t }: any) {
   const testEnvs = environments.filter((e: Environment) => e.kind === 'Test' || e.kind === 'Uat');
   return (
     <>
@@ -819,7 +857,7 @@ function ApplyTab({ applyRuns, snapshots, snapshotDiffs, regressionRuns, readine
 }
 
 // ── Audit Tab ─────────────────────────────────────────────────────
-function AuditTab({ audits, signOffs, traceChains }: any) {
+function AuditTab({ audits, signOffs, traceChains, t }: any) {
   return (
     <>
       <Card title="Traceability — REQ → URS → Blueprint → Config" icon={<Shield size={14} />}>
@@ -963,3 +1001,5 @@ function truncate(v: string, max = 100) {
   if (!v) return '';
   return v.length > max ? v.slice(0, max) + '…' : v;
 }
+
+
