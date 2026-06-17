@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';
+import { pt } from './phaseI18n';
 
 type LoadState = 'loading' | 'api' | 'mock';
 
@@ -100,12 +101,12 @@ export function Phase12CollaborationHub() {
           <div className="brand-mark">P12</div>
           <div>
             <h1>HRM AI Ops</h1>
-            <span>Collaboration Hub</span>
+            <span>{pt('Collaboration Hub')}</span>
           </div>
         </div>
         {nav.map((item) => (
           <button key={item.route} onClick={() => navigate(item.route)}>
-            {item.icon} {item.label}
+            {item.icon} {pt(item.label)}
           </button>
         ))}
       </aside>
@@ -114,10 +115,10 @@ export function Phase12CollaborationHub() {
         <header className="topbar">
           <div>
             <p>Phase 12</p>
-            <h2>{title(route)}</h2>
+            <h2>{pt(title(route))}</h2>
           </div>
           <span className={`status ${loadState === 'api' ? 'ok' : 'idle'}`}>
-            {loadState === 'loading' ? 'Loading API' : loadState === 'api' ? 'API connected' : 'Local mock mode'}
+            {loadState === 'loading' ? pt('Loading API') : loadState === 'api' ? pt('API connected') : pt('Local mock mode')}
           </span>
         </header>
 
@@ -148,20 +149,20 @@ function Dashboard({ state }: { state: HubState }) {
   return (
     <>
       <section className="metric-grid phase7-metrics">
-        <Metric label="Unread notifications" value={data.unreadNotifications} />
-        <Metric label="Delivery failures" value={data.deliveryFailures} />
-        <Metric label="Active rules" value={data.activeWorkflowRules} />
-        <Metric label="Runs today" value={data.workflowRunsToday} />
-        <Metric label="Open tasks" value={data.openTasks} />
-        <Metric label="Due reminders" value={data.dueReminders} />
-        <Metric label="Open escalations" value={data.openEscalations} />
-        <Metric label="Deliveries" value={state.deliveries.length} />
+        <Metric label={pt('Unread notifications')} value={data.unreadNotifications} />
+        <Metric label={pt('Delivery failures')} value={data.deliveryFailures} />
+        <Metric label={pt('Active rules')} value={data.activeWorkflowRules} />
+        <Metric label={pt('Runs today')} value={data.workflowRunsToday} />
+        <Metric label={pt('Open tasks')} value={data.openTasks} />
+        <Metric label={pt('Due reminders')} value={data.dueReminders} />
+        <Metric label={pt('Open escalations')} value={data.openEscalations} />
+        <Metric label={pt('Deliveries')} value={state.deliveries.length} />
       </section>
       <section className="content-grid two">
-        <Panel title="Latest Timeline" icon={<History size={18} />}>
+        <Panel title={pt('Latest Timeline')} icon={<History size={18} />}>
           <Rows items={data.latestTimeline ?? state.timeline} primary="title" secondary="itemType" />
         </Panel>
-        <Panel title="Latest Deliveries" icon={<MailCheck size={18} />}>
+        <Panel title={pt('Latest Deliveries')} icon={<MailCheck size={18} />}>
           <Rows items={data.latestDeliveries ?? state.deliveries} primary="recipientRef" secondary="status" />
         </Panel>
       </section>
@@ -170,27 +171,27 @@ function Dashboard({ state }: { state: HubState }) {
 }
 
 function Notifications({ state }: { state: HubState }) {
-  return <section className="content-grid two"><Panel title="Notification Templates" icon={<Bell size={18} />}><Rows items={state.templates.map((x) => ({ ...x.template, status: `${x.template.channel} / ${x.template.notificationType}` }))} primary="name" secondary="status" /></Panel><Panel title="Delivery Logs" icon={<MailCheck size={18} />}><Rows items={state.deliveries} primary="recipientRef" secondary="status" /></Panel></section>;
+  return <section className="content-grid two"><Panel title={pt('Notification Templates')} icon={<Bell size={18} />}><Rows items={state.templates.map((x) => ({ ...x.template, status: `${x.template.channel} / ${x.template.notificationType}` }))} primary="name" secondary="status" /></Panel><Panel title={pt('Delivery Logs')} icon={<MailCheck size={18} />}><Rows items={state.deliveries} primary="recipientRef" secondary="status" /></Panel></section>;
 }
 
 function Workflow({ state, onTrigger }: { state: HubState; onTrigger: () => void }) {
-  return <section className="content-grid two"><Panel title="Workflow Rules" icon={<GitBranch size={18} />} action={<button onClick={onTrigger}><Play size={14} /> Trigger Sample</button>}><Rows items={state.rules} primary="name" secondary="triggerEvent" /></Panel><Panel title="Workflow Runs" icon={<Route size={18} />}><Rows items={state.runs.map((x) => ({ ...x.run, title: x.run.triggerEvent }))} primary="title" secondary="status" /></Panel></section>;
+  return <section className="content-grid two"><Panel title={pt('Workflow Rules')} icon={<GitBranch size={18} />} action={<button onClick={onTrigger}><Play size={14} /> {pt('Trigger Sample')}</button>}><Rows items={state.rules} primary="name" secondary="triggerEvent" /></Panel><Panel title={pt('Workflow Runs')} icon={<Route size={18} />}><Rows items={state.runs.map((x) => ({ ...x.run, title: x.run.triggerEvent }))} primary="title" secondary="status" /></Panel></section>;
 }
 
 function Tasks({ state, onComplete }: { state: HubState; onComplete: () => void }) {
-  return <Panel title="Task Assignment" icon={<CheckSquare size={18} />} action={<button onClick={onComplete}>Complete First</button>}><Rows items={state.tasks} primary="title" secondary="status" /></Panel>;
+  return <Panel title={pt('Task Assignment')} icon={<CheckSquare size={18} />} action={<button onClick={onComplete}>{pt('Complete First')}</button>}><Rows items={state.tasks} primary="title" secondary="status" /></Panel>;
 }
 
 function Reminders({ state, onRun }: { state: HubState; onRun: () => void }) {
-  return <Panel title="Reminder Queue" icon={<TimerReset size={18} />} action={<button onClick={onRun}>Run Due</button>}><Rows items={state.reminders.map((x) => ({ ...x, title: x.reminderType }))} primary="title" secondary="status" /></Panel>;
+  return <Panel title={pt('Reminder Queue')} icon={<TimerReset size={18} />} action={<button onClick={onRun}>{pt('Run Due')}</button>}><Rows items={state.reminders.map((x) => ({ ...x, title: x.reminderType }))} primary="title" secondary="status" /></Panel>;
 }
 
 function Escalations({ state }: { state: HubState }) {
-  return <Panel title="Escalation Center" icon={<Megaphone size={18} />}><Rows items={state.escalations.map((x) => ({ ...x, title: x.reason }))} primary="title" secondary="status" /></Panel>;
+  return <Panel title={pt('Escalation Center')} icon={<Megaphone size={18} />}><Rows items={state.escalations.map((x) => ({ ...x, title: x.reason }))} primary="title" secondary="status" /></Panel>;
 }
 
 function Timeline({ state }: { state: HubState }) {
-  return <Panel title="Activity Timeline" icon={<History size={18} />}><Rows items={state.timeline} primary="title" secondary="itemType" /></Panel>;
+  return <Panel title={pt('Activity Timeline')} icon={<History size={18} />}><Rows items={state.timeline} primary="title" secondary="itemType" /></Panel>;
 }
 
 function Metric({ label, value }: { label: string; value: any }) {
@@ -202,7 +203,7 @@ function Panel({ title, icon, action, children }: { title: string; icon: React.R
 }
 
 function Rows({ items, primary, secondary }: { items: any[]; primary: string; secondary: string }) {
-  if (!items?.length) return <p className="empty">No collaboration data.</p>;
+  if (!items?.length) return <p className="empty">{pt('No collaboration data.')}</p>;
   return <div className="action-list">{items.map((item, index) => <div className="list-row" key={item.id ?? index}><div><strong>{item[primary] ?? item.title ?? item.name}</strong><span>{item[secondary] ?? item.status}</span><small>{item.createdAt ?? item.startedAt ?? item.dueAt ?? ''}</small></div><StatusBadge text={String(item.status ?? item[secondary] ?? 'Active')} /></div>)}</div>;
 }
 

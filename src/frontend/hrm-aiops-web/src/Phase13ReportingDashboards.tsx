@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
+import { pt } from './phaseI18n';
 
 type LoadState = 'loading' | 'api' | 'mock';
 
@@ -167,12 +168,12 @@ export function Phase13ReportingDashboards() {
           <div className="brand-mark">P13</div>
           <div>
             <h1>HRM AI Ops</h1>
-            <span>Reporting</span>
+            <span>{pt('Reporting')}</span>
           </div>
         </div>
         {nav.map((item) => (
           <button key={item.route} onClick={() => navigate(item.route)}>
-            {item.icon} {item.label}
+            {item.icon} {pt(item.label)}
           </button>
         ))}
       </aside>
@@ -181,34 +182,34 @@ export function Phase13ReportingDashboards() {
         <header className="topbar">
           <div>
             <p>Phase 13 / {state.customerName} / {state.projectName}</p>
-            <h2>{title(route)}</h2>
+            <h2>{pt(title(route))}</h2>
           </div>
           <span className={`status ${loadState === 'api' ? 'ok' : 'idle'}`}>
-            {loadState === 'loading' ? 'Loading API' : loadState === 'api' ? 'API connected' : 'Local mock mode'}
+            {loadState === 'loading' ? pt('Loading API') : loadState === 'api' ? pt('API connected') : pt('Local mock mode')}
           </span>
         </header>
 
         <section className="panel phase13-toolbar">
           <label>
-            From
+            {pt('From')}
             <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
           </label>
           <label>
-            To
+            {pt('To')}
             <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
           </label>
           <label>
-            Report
+            {pt('Report')}
             <select value={selectedTemplateId} onChange={(event) => setSelectedTemplateId(event.target.value)}>
               {state.catalog.map((item) => (
                 <option key={item.templateId} value={item.templateId}>{item.name}</option>
               ))}
             </select>
           </label>
-          <button onClick={refreshRange}><LineChart size={16} /> Refresh</button>
-          <button onClick={generateSummary}><Bot size={16} /> AI Summary</button>
-          <button onClick={() => generateExport('InternalOnly')}><Download size={16} /> Export</button>
-          <button onClick={() => generateExport('PublishedToPortal')}><Share2 size={16} /> Publish</button>
+          <button onClick={refreshRange}><LineChart size={16} /> {pt('Refresh')}</button>
+          <button onClick={generateSummary}><Bot size={16} /> {pt('AI Summary')}</button>
+          <button onClick={() => generateExport('InternalOnly')}><Download size={16} /> {pt('Export')}</button>
+          <button onClick={() => generateExport('PublishedToPortal')}><Share2 size={16} /> {pt('Publish')}</button>
         </section>
 
         {route.includes('/project-dashboard') ? <ProjectDashboard state={state} /> :
@@ -232,23 +233,23 @@ function ExecutiveDashboard({ state }: { state: Phase13State }) {
   return (
     <>
       <section className="metric-grid phase7-metrics">
-        <Metric label="Health score" value={data.healthScore} icon={<Gauge size={18} />} />
-        <Metric label="Open issues" value={data.openIssues} icon={<FileText size={18} />} />
-        <Metric label="High risk" value={data.highRiskIssues} icon={<BarChart3 size={18} />} />
-        <Metric label="SLA breached" value={data.slaBreached} icon={<HeartPulse size={18} />} />
-        <Metric label="AI runs" value={data.aiRuns} icon={<Bot size={18} />} />
-        <Metric label="Exports" value={data.reportExports} icon={<Download size={18} />} />
-        <Metric label="Releases" value={data.releases} icon={<LineChart size={18} />} />
-        <Metric label="Projects" value={data.activeProjects} icon={<LayoutDashboard size={18} />} />
+        <Metric label={pt('Health score')} value={data.healthScore} icon={<Gauge size={18} />} />
+        <Metric label={pt('Open issues')} value={data.openIssues} icon={<FileText size={18} />} />
+        <Metric label={pt('High risk')} value={data.highRiskIssues} icon={<BarChart3 size={18} />} />
+        <Metric label={pt('SLA breached')} value={data.slaBreached} icon={<HeartPulse size={18} />} />
+        <Metric label={pt('AI runs')} value={data.aiRuns} icon={<Bot size={18} />} />
+        <Metric label={pt('Exports')} value={data.reportExports} icon={<Download size={18} />} />
+        <Metric label={pt('Releases')} value={data.releases} icon={<LineChart size={18} />} />
+        <Metric label={pt('Projects')} value={data.activeProjects} icon={<LayoutDashboard size={18} />} />
       </section>
       <section className="content-grid two">
-        <Panel title="AI Summary" icon={<Bot size={18} />}>
+        <Panel title={pt('AI Summary')} icon={<Bot size={18} />}>
           <div className="phase7-summary">
-            <strong>{state.summary?.aiSummary ?? data.latestAiSummary ?? 'No AI summary yet.'}</strong>
+            <strong>{state.summary?.aiSummary ?? data.latestAiSummary ?? pt('No AI summary yet.')}</strong>
             <span>AiRun: {state.summary?.aiRunId ?? 'pending'}</span>
           </div>
         </Panel>
-        <Panel title="Top Risks" icon={<BarChart3 size={18} />}>
+        <Panel title={pt('Top Risks')} icon={<BarChart3 size={18} />}>
           <Rows items={data.topRisks ?? []} primary="title" secondary="riskLevel" />
         </Panel>
       </section>
@@ -262,14 +263,14 @@ function ProjectDashboard({ state }: { state: Phase13State }) {
   return (
     <>
       <section className="metric-grid phase7-metrics">
-        <Metric label="Requirements" value={docs.requirements} icon={<FileText size={18} />} />
-        <Metric label="URS" value={docs.urs} icon={<FileText size={18} />} />
-        <Metric label="Blueprints" value={docs.blueprints} icon={<FileText size={18} />} />
-        <Metric label="Config specs" value={docs.configSpecs} icon={<FileText size={18} />} />
-        <Metric label="Sign-offs" value={docs.signedOff} icon={<Share2 size={18} />} />
-        <Metric label="Apply runs" value={delivery.applyRuns} icon={<LineChart size={18} />} />
-        <Metric label="Release ready" value={delivery.releaseReady} icon={<Gauge size={18} />} />
-        <Metric label="Trace links" value={state.project.traceability} icon={<BarChart3 size={18} />} />
+        <Metric label={pt('Requirements')} value={docs.requirements} icon={<FileText size={18} />} />
+        <Metric label={pt('URS')} value={docs.urs} icon={<FileText size={18} />} />
+        <Metric label={pt('Blueprints')} value={docs.blueprints} icon={<FileText size={18} />} />
+        <Metric label={pt('Config specs')} value={docs.configSpecs} icon={<FileText size={18} />} />
+        <Metric label={pt('Sign-offs')} value={docs.signedOff} icon={<Share2 size={18} />} />
+        <Metric label={pt('Apply runs')} value={delivery.applyRuns} icon={<LineChart size={18} />} />
+        <Metric label={pt('Release ready')} value={delivery.releaseReady} icon={<Gauge size={18} />} />
+        <Metric label={pt('Trace links')} value={state.project.traceability} icon={<BarChart3 size={18} />} />
       </section>
       <section className="content-grid two">
         <Panel title="Latest Readiness" icon={<Gauge size={18} />}>

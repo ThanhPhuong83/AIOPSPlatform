@@ -1,45 +1,55 @@
-import React from 'react';
+import React, { lazy, Suspense, ComponentType } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
-import { Phase7ProductionReleases } from './Phase7ProductionReleases';
-import { Phase8GovernanceAnalytics } from './Phase8GovernanceAnalytics';
-import { Phase9SecurityGovernance } from './Phase9SecurityGovernance';
-import { Phase10CustomerPortal } from './Phase10CustomerPortal';
-import { Phase11CustomerPortal } from './Phase11CustomerPortal';
-import { Phase12CollaborationHub } from './Phase12CollaborationHub';
-import { Phase13ReportingDashboards } from './Phase13ReportingDashboards';
-import { Phase14IntegrationHub } from './Phase14IntegrationHub';
-import { Phase15DevOpsGovernance } from './Phase15DevOpsGovernance';
-import { Phase16Observability } from './Phase16Observability';
-import { Phase17DataMigration } from './Phase17DataMigration';
+import { PhaseChrome } from './PhaseChrome';
+import { restoreSession } from './session';
 import './styles.css';
 
-const root = window.location.pathname.startsWith('/production-release')
-  ? <Phase7ProductionReleases />
-  : window.location.pathname.startsWith('/governance-analytics') || window.location.pathname.startsWith('/knowledge-learning')
-    ? <Phase8GovernanceAnalytics />
-    : window.location.pathname.startsWith('/security-dashboard') || window.location.pathname.startsWith('/tenant-security') || window.location.pathname.startsWith('/compliance-evidence')
-      ? <Phase9SecurityGovernance />
-      : window.location.pathname.startsWith('/customer-portal')
-        ? <Phase11CustomerPortal />
-      : window.location.pathname.startsWith('/collaboration-hub') || window.location.pathname.startsWith('/workflow-automation') || window.location.pathname.startsWith('/notification-center')
-        ? <Phase12CollaborationHub />
-      : window.location.pathname.startsWith('/executive-dashboard') || window.location.pathname.startsWith('/project-dashboard') || window.location.pathname.startsWith('/customer-health-dashboard') || window.location.pathname.startsWith('/reporting-exports')
-        ? <Phase13ReportingDashboards />
-      : window.location.pathname.startsWith('/integration-hub') || window.location.pathname.startsWith('/integration-providers') || window.location.pathname.startsWith('/webhooks') || window.location.pathname.startsWith('/api-gateway') || window.location.pathname.startsWith('/automation-triggers') || window.location.pathname.startsWith('/integration-runs')
-        ? <Phase14IntegrationHub />
-      : window.location.pathname.startsWith('/devops-dashboard') || window.location.pathname.startsWith('/source-repositories') || window.location.pathname.startsWith('/pull-requests') || window.location.pathname.startsWith('/ci-cd-pipelines') || window.location.pathname.startsWith('/release-packages') || window.location.pathname.startsWith('/ai-code-governance')
-        ? <Phase15DevOpsGovernance />
-      : window.location.pathname.startsWith('/observability-dashboard') || window.location.pathname.startsWith('/runtime-telemetry') || window.location.pathname.startsWith('/monitoring-rules') || window.location.pathname.startsWith('/alerts') || window.location.pathname.startsWith('/incidents') || window.location.pathname.startsWith('/incident-ai') || window.location.pathname.startsWith('/post-incident-review')
-        ? <Phase16Observability />
-      : window.location.pathname.startsWith('/data-migration-dashboard') || window.location.pathname.startsWith('/import-templates') || window.location.pathname.startsWith('/import-files') || window.location.pathname.startsWith('/data-mappings') || window.location.pathname.startsWith('/validation-rules') || window.location.pathname.startsWith('/import-batches') || window.location.pathname.startsWith('/reconciliation-reports') || window.location.pathname.startsWith('/data-signoff')
-        ? <Phase17DataMigration />
-      : window.location.pathname.startsWith('/billing-dashboard') || window.location.pathname.startsWith('/sla-dashboard')
-        ? <Phase10CustomerPortal />
-    : <App />;
+// Apply the saved theme before first paint so every page (console + phase roots)
+// opens in the user's chosen light/dark mode, and re-arm the api auth header from
+// the persisted login so phase roots can call the API too.
+document.documentElement.setAttribute(
+  'data-theme', localStorage.getItem('theme') === 'dark' ? 'dark' : 'light'
+);
+const session = restoreSession();
+
+// Each phase is its own standalone page; lazy-load so a given page only ships its
+// own chunk instead of bundling all 17 phases together.
+const lazyPhase = (load: () => Promise<{ [k: string]: ComponentType }>, name: string) =>
+  lazy(async () => ({ default: (await load())[name] }));
+
+type Route = { prefixes: string[]; component: ComponentType };
+const PHASE_ROUTES: Route[] = [
+  { prefixes: ['/production-release'], component: lazyPhase(() => import('./Phase7ProductionReleases'), 'Phase7ProductionReleases') },
+  { prefixes: ['/governance-analytics', '/knowledge-learning'], component: lazyPhase(() => import('./Phase8GovernanceAnalytics'), 'Phase8GovernanceAnalytics') },
+  { prefixes: ['/security-dashboard', '/tenant-security', '/compliance-evidence'], component: lazyPhase(() => import('./Phase9SecurityGovernance'), 'Phase9SecurityGovernance') },
+  { prefixes: ['/customer-portal'], component: lazyPhase(() => import('./Phase11CustomerPortal'), 'Phase11CustomerPortal') },
+  { prefixes: ['/billing-dashboard', '/sla-dashboard'], component: lazyPhase(() => import('./Phase10CustomerPortal'), 'Phase10CustomerPortal') },
+  { prefixes: ['/collaboration-hub', '/workflow-automation', '/notification-center'], component: lazyPhase(() => import('./Phase12CollaborationHub'), 'Phase12CollaborationHub') },
+  { prefixes: ['/executive-dashboard', '/project-dashboard', '/customer-health-dashboard', '/reporting-exports'], component: lazyPhase(() => import('./Phase13ReportingDashboards'), 'Phase13ReportingDashboards') },
+  { prefixes: ['/integration-hub', '/integration-providers', '/webhooks', '/api-gateway', '/automation-triggers', '/integration-runs'], component: lazyPhase(() => import('./Phase14IntegrationHub'), 'Phase14IntegrationHub') },
+  { prefixes: ['/devops-dashboard', '/source-repositories', '/pull-requests', '/ci-cd-pipelines', '/release-packages', '/ai-code-governance'], component: lazyPhase(() => import('./Phase15DevOpsGovernance'), 'Phase15DevOpsGovernance') },
+  { prefixes: ['/observability-dashboard', '/runtime-telemetry', '/monitoring-rules', '/alerts', '/incidents', '/incident-ai', '/post-incident-review'], component: lazyPhase(() => import('./Phase16Observability'), 'Phase16Observability') },
+  { prefixes: ['/data-migration-dashboard', '/import-templates', '/import-files', '/data-mappings', '/validation-rules', '/import-batches', '/reconciliation-reports', '/data-signoff'], component: lazyPhase(() => import('./Phase17DataMigration'), 'Phase17DataMigration') }
+];
+
+const path = window.location.pathname;
+const match = PHASE_ROUTES.find(r => r.prefixes.some(p => path.startsWith(p)));
+
+// Phase pages require a login; without one, bounce to the console (which shows
+// the login form) so they can't be reached by typing the URL directly.
+if (match && !session) {
+  window.location.replace('/');
+}
+
+const Phase = match?.component;
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    {root}
+    {Phase && session
+      ? <Suspense fallback={<div className="route-loading">Đang tải…</div>}>
+          <PhaseChrome><Phase /></PhaseChrome>
+        </Suspense>
+      : <App />}
   </React.StrictMode>
 );

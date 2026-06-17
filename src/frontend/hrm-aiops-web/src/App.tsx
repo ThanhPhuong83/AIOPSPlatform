@@ -2,11 +2,12 @@ import {
   Activity, AlertTriangle, Bot, Building2, CheckCircle2, ChevronDown,
   FileText, GitCompare, Key, Layers3, LogOut, Moon, Plus, RefreshCw,
   Rocket, Shield, ShieldCheck, Sun, Trash2, UserCheck, UserCog,
-  UserMinus, UserPlus, Users, Lock, Bell
+  UserMinus, UserPlus, Users, Lock, Bell, LayoutGrid, ExternalLink
 } from 'lucide-react';
+import { MODULE_LINKS } from './modules';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
-  api, setCurrentUser,
+  api,
   AuditLog, AiProposal, AiRun, ApplyRun, Blueprint, ConfigSpec,
   Customer, CustomerConnector, DocumentSignOff, Environment,
   EnvironmentSnapshot, FixProposal, HrmModule, Issue, PromptTemplate,
@@ -14,6 +15,7 @@ import {
   ReleaseDraft, ReleaseReadinessReport, SnapshotDiff, TraceChain, UrsDocument
 } from './api';
 import { Lang, LANGS, makeT } from './i18n';
+import { getSession, saveSession, clearSession } from './session';
 
 type LoadState = 'idle' | 'loading' | 'error';
 type Tab = 'dashboard' | 'documents' | 'issues' | 'ai' | 'apply' | 'audit' | 'users';
@@ -21,7 +23,7 @@ type Engineer = { userId: string; name: string };
 
 // ── Root ──────────────────────────────────────────────────────────
 export function App() {
-  const [engineer, setEngineer] = useState<Engineer | null>(null);
+  const [engineer, setEngineer] = useState<Engineer | null>(() => getSession());
   const [dark, setDark]   = useState(() => localStorage.getItem('theme') === 'dark');
   const [lang, setLang]   = useState<Lang>(() => (localStorage.getItem('lang') as Lang) || 'vi');
 
@@ -34,9 +36,12 @@ export function App() {
 
   const t = useMemo(() => makeT(lang), [lang]);
 
+  function login(e: Engineer) { saveSession(e); setEngineer(e); }
+  function logout() { clearSession(); setEngineer(null); }
+
   if (!engineer)
-    return <LoginPage onLogin={setEngineer} dark={dark} onToggleDark={() => setDark(d => !d)} lang={lang} setLang={setLang} t={t} />;
-  return <Workspace engineer={engineer} onLogout={() => setEngineer(null)} dark={dark} onToggleDark={() => setDark(d => !d)} lang={lang} setLang={setLang} t={t} />;
+    return <LoginPage onLogin={login} dark={dark} onToggleDark={() => setDark(d => !d)} lang={lang} setLang={setLang} t={t} />;
+  return <Workspace engineer={engineer} onLogout={logout} dark={dark} onToggleDark={() => setDark(d => !d)} lang={lang} setLang={setLang} t={t} />;
 }
 
 // ── Login ─────────────────────────────────────────────────────────
@@ -52,7 +57,6 @@ function LoginPage({ onLogin, dark, onToggleDark, lang, setLang, t }: {
     const pass = String(fd.get('password') ?? '').trim();
     if (!name || !pass) { setErr(t('login.error')); return; }
     const userId = name.toLowerCase().replace(/\s+/g, '.');
-    setCurrentUser(userId);
     onLogin({ userId, name });
   }
   return (
@@ -336,6 +340,16 @@ function Workspace({ engineer, onLogout, dark, onToggleDark, lang, setLang, t }:
               <span style={{ flex:1 }}>{n.label}</span>
               {n.id === 'issues' && openIssues > 0 && <span className="ws-nav-badge">{openIssues}</span>}
               {n.id === 'ai'     && pendingAi  > 0 && <span className="ws-nav-badge">{pendingAi}</span>}
+            </button>
+          ))}
+
+          {/* Extended modules (Phase 7–17 standalone pages) */}
+          <div className="ws-left-section">{t('nav.modules')}</div>
+          {MODULE_LINKS.filter(m => m.path !== '/').map(m => (
+            <button key={m.path} className="ws-nav-item" onClick={() => { window.location.href = m.path; }}>
+              <LayoutGrid size={15} />
+              <span style={{ flex:1 }}>{m.label}</span>
+              <ExternalLink size={11} style={{ opacity:.4 }} />
             </button>
           ))}
 
@@ -1191,7 +1205,7 @@ function StatCard({ color, label, period, value, trend, up, prev }: any) {
   );
 }
 
-function Card({ title, sub, icon, link, children }: { title: string; sub?: string; icon?: React.ReactNode; link?: string; children: React.ReactNode }) {
+function Card({ title, sub, icon, link, count, children }: { title: string; sub?: string; icon?: React.ReactNode; link?: string; count?: number; children: React.ReactNode }) {
   return (
     <div className="card">
       <div className="card-header">
@@ -1202,6 +1216,7 @@ function Card({ title, sub, icon, link, children }: { title: string; sub?: strin
             {sub && <p>{sub}</p>}
           </div>
         </div>
+        {count !== undefined && <span className="card-count">{count}</span>}
         {link && <span className="card-link">{link}</span>}
       </div>
       <div className="card-body">{children}</div>

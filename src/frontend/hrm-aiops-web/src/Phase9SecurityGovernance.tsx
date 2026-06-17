@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from './api';
+import { pt } from './phaseI18n';
 
 type SecurityDashboard = {
   actor: string;
@@ -106,17 +107,17 @@ export function Phase9SecurityGovernance() {
           <div className="brand-mark">P9</div>
           <div>
             <h1>HRM AI Ops</h1>
-            <span>Enterprise Security</span>
+            <span>{pt('Enterprise Security')}</span>
           </div>
         </div>
         <button onClick={() => navigate('/security-dashboard')}>
-          <ShieldCheck size={16} /> Security Dashboard
+          <ShieldCheck size={16} /> {pt('Security Dashboard')}
         </button>
         <button onClick={() => navigate('/tenant-security')}>
-          <UserRoundCog size={16} /> Tenant & RBAC
+          <UserRoundCog size={16} /> {pt('Tenant & RBAC')}
         </button>
         <button onClick={() => navigate('/compliance-evidence')}>
-          <FileCheck2 size={16} /> Compliance
+          <FileCheck2 size={16} /> {pt('Compliance')}
         </button>
       </aside>
 
@@ -124,10 +125,10 @@ export function Phase9SecurityGovernance() {
         <header className="topbar">
           <div>
             <p>Phase 9</p>
-            <h2>{route.startsWith('/tenant-security') ? 'Tenant Security & RBAC' : route.startsWith('/compliance-evidence') ? 'Compliance Evidence' : 'Security Dashboard'}</h2>
+            <h2>{route.startsWith('/tenant-security') ? pt('Tenant Security & RBAC') : route.startsWith('/compliance-evidence') ? pt('Compliance Evidence') : pt('Security Dashboard')}</h2>
           </div>
           <span className={`status ${loadState === 'api' ? 'ok' : 'idle'}`}>
-            {loadState === 'loading' ? 'Loading API' : loadState === 'api' ? 'API connected' : 'Local mock mode'}
+            {loadState === 'loading' ? pt('Loading API') : loadState === 'api' ? pt('API connected') : pt('Local mock mode')}
           </span>
         </header>
 
@@ -151,14 +152,14 @@ async function fetchJson<T>(path: string, headers: Record<string, string>): Prom
 
 function SecurityDashboardView({ dashboard, approvalRules, classificationRules }: { dashboard: SecurityDashboard; approvalRules: ApprovalRule[]; classificationRules: ClassificationRule[] }) {
   const metrics = [
-    ['Tenant grants', dashboard.tenantAccessGrants],
-    ['Roles', dashboard.roles],
-    ['Permissions', dashboard.permissions],
-    ['AI policies', dashboard.aiAccessPolicies],
-    ['Connector policies', dashboard.connectorSecurityPolicies],
-    ['Multi-step approval rules', dashboard.multiStepApprovalRules],
-    ['Secret access events', dashboard.secretAccessCount],
-    ['Immutable audit logs', dashboard.immutableAuditLogs]
+    [pt('Tenant grants'), dashboard.tenantAccessGrants],
+    [pt('Roles'), dashboard.roles],
+    [pt('Permissions'), dashboard.permissions],
+    [pt('AI policies'), dashboard.aiAccessPolicies],
+    [pt('Connector policies'), dashboard.connectorSecurityPolicies],
+    [pt('Multi-step approval rules'), dashboard.multiStepApprovalRules],
+    [pt('Secret access events'), dashboard.secretAccessCount],
+    [pt('Immutable audit logs'), dashboard.immutableAuditLogs]
   ];
 
   return (
@@ -173,12 +174,12 @@ function SecurityDashboardView({ dashboard, approvalRules, classificationRules }
         ))}
       </section>
       <section className="content-grid two">
-        <Panel title="Security Controls" icon={<LockKeyhole size={18} />}>
+        <Panel title={pt('Security Controls')} icon={<LockKeyhole size={18} />}>
           <div className="control-list">
             {dashboard.controls.map((control) => <span key={control}>{control}</span>)}
           </div>
         </Panel>
-        <Panel title="Data Classification" icon={<DatabaseZap size={18} />}>
+        <Panel title={pt('Data Classification')} icon={<DatabaseZap size={18} />}>
           <div className="action-list">
             {classificationRules.map((rule) => (
               <div className="list-row" key={rule.id}>
@@ -202,7 +203,7 @@ function SecurityDashboardView({ dashboard, approvalRules, classificationRules }
 function TenantSecurityView({ roles, classificationRules }: { roles: RoleBundle; classificationRules: ClassificationRule[] }) {
   return (
     <section className="content-grid two">
-      <Panel title="RBAC Roles" icon={<UserRoundCog size={18} />}>
+      <Panel title={pt('RBAC Roles')} icon={<UserRoundCog size={18} />}>
         <div className="action-list">
           {roles.roles.map((role) => (
             <div className="list-row" key={role.id}>
@@ -214,7 +215,7 @@ function TenantSecurityView({ roles, classificationRules }: { roles: RoleBundle;
           ))}
         </div>
       </Panel>
-      <Panel title="Sensitive Permissions" icon={<KeyRound size={18} />}>
+      <Panel title={pt('Sensitive Permissions')} icon={<KeyRound size={18} />}>
         <div className="action-list">
           {roles.permissions.filter((item) => item.sensitive).map((permission) => (
             <div className="list-row" key={permission.id}>
@@ -227,7 +228,7 @@ function TenantSecurityView({ roles, classificationRules }: { roles: RoleBundle;
           ))}
         </div>
       </Panel>
-      <Panel title="Role Assignments" icon={<ShieldCheck size={18} />}>
+      <Panel title={pt('Role Assignments')} icon={<ShieldCheck size={18} />}>
         <div className="action-list">
           {roles.assignments.map((assignment) => (
             <div className="list-row" key={assignment.id}>
@@ -239,7 +240,7 @@ function TenantSecurityView({ roles, classificationRules }: { roles: RoleBundle;
           ))}
         </div>
       </Panel>
-      <Panel title="AI Masking Rules" icon={<SlidersHorizontal size={18} />}>
+      <Panel title={pt('AI Masking Rules')} icon={<SlidersHorizontal size={18} />}>
         <div className="control-list">
           {classificationRules.map((rule) => <span key={rule.id}>{rule.resourceType}.{rule.fieldName}: {rule.maskingStrategy}</span>)}
         </div>
@@ -251,7 +252,7 @@ function TenantSecurityView({ roles, classificationRules }: { roles: RoleBundle;
 function ComplianceView({ dashboard, approvalRules }: { dashboard: SecurityDashboard; approvalRules: ApprovalRule[] }) {
   return (
     <section className="content-grid two">
-      <Panel title="Compliance Coverage" icon={<FileCheck2 size={18} />}>
+      <Panel title={pt('Compliance Coverage')} icon={<FileCheck2 size={18} />}>
         <div className="phase7-summary">
           <strong>{dashboard.complianceEvidence} evidence item(s)</strong>
           <span>{dashboard.immutableAuditLogs} immutable audit log(s) available for evidence trace.</span>
@@ -265,7 +266,7 @@ function ComplianceView({ dashboard, approvalRules }: { dashboard: SecurityDashb
 
 function ApprovalRulePanel({ approvalRules }: { approvalRules: ApprovalRule[] }) {
   return (
-    <Panel title="Approval Governance Rules" icon={<FileCheck2 size={18} />}>
+    <Panel title={pt('Approval Governance Rules')} icon={<FileCheck2 size={18} />}>
       <div className="action-list">
         {approvalRules.map((rule) => (
           <div className="list-row" key={rule.id}>

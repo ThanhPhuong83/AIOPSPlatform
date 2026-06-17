@@ -30,6 +30,7 @@ const T: Record<Lang, Dict> = {
     'nav.ai':             'AI Ops',
     'nav.apply':          'Apply & Test',
     'nav.audit':          'Audit',
+    'nav.modules':        'Phân hệ mở rộng',
     // Sub-nav
     'subnav.dashboard.0': 'Tổng quan',
     'subnav.dashboard.1': 'Tạo khách hàng',
@@ -237,6 +238,7 @@ const T: Record<Lang, Dict> = {
     'nav.ai':             'AI Ops',
     'nav.apply':          'Apply & Test',
     'nav.audit':          'Audit',
+    'nav.modules':        'Extended Modules',
     // Sub-nav
     'subnav.dashboard.0': 'Overview',
     'subnav.dashboard.1': 'New Customer',
@@ -444,6 +446,7 @@ const T: Record<Lang, Dict> = {
     'nav.ai':             'AI 運用',
     'nav.apply':          '適用 & テスト',
     'nav.audit':          '監査',
+    'nav.modules':        '拡張モジュール',
     // Sub-nav
     'subnav.dashboard.0': '概要',
     'subnav.dashboard.1': '顧客追加',

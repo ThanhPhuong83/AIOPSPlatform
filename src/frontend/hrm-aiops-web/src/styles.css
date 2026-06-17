@@ -96,6 +96,24 @@ button,input,select,textarea{font:inherit;}
 .ws-nav-item svg{flex-shrink:0;opacity:.7;}
 .ws-nav-badge{margin-left:auto;background:#ef4444;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;}
 
+/* ─── Lazy route loading fallback ────────────────────── */
+.route-loading{display:grid;place-items:center;height:60vh;color:var(--text-3);font-size:13px;}
+
+/* ─── Phase chrome (shared bar on Phase 7–17 pages) ──── */
+.phase-chrome{height:46px;background:var(--navy);display:flex;align-items:center;gap:16px;padding:0 16px;position:sticky;top:0;z-index:300;}
+.phase-chrome-home{display:flex;align-items:center;gap:8px;color:#fff;text-decoration:none;font-weight:700;font-size:13px;}
+.phase-chrome-logo{width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.13);display:grid;place-items:center;flex-shrink:0;}
+.phase-chrome-jump{display:flex;align-items:center;gap:7px;color:rgba(255,255,255,.7);}
+.phase-chrome-jump select{height:28px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:var(--r-sm);color:#fff;font-size:12px;padding:0 8px;cursor:pointer;min-width:230px;}
+.phase-chrome-jump select:focus{outline:none;border-color:rgba(255,255,255,.45);}
+.phase-chrome-jump select option{background:var(--navy);color:#fff;}
+.phase-chrome-lang{margin-left:auto;height:28px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:var(--r-sm);color:#fff;font-size:12px;padding:0 6px;cursor:pointer;}
+.phase-chrome-lang:focus{outline:none;border-color:rgba(255,255,255,.45);}
+.phase-chrome-lang option{background:var(--navy);color:#fff;}
+.phase-chrome-theme{width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:rgba(255,255,255,.85);display:grid;place-items:center;cursor:pointer;flex-shrink:0;transition:background .15s;}
+.phase-chrome-theme:hover{background:rgba(255,255,255,.2);color:#fff;}
+[data-theme="dark"] .phase-chrome{background:#0d1424;border-bottom:1px solid #21293a;}
+
 /* ─── Right area ─────────────────────────────────────── */
 .ws-right{flex:1;display:flex;flex-direction:column;overflow:hidden;}
 

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';
+import { pt } from './phaseI18n';
 
 type PortalSummary = {
   subscription?: { subscriptionNo: string; status: string; billingCycle: string; currentPeriodStart: string; currentPeriodEnd: string; unitPrice: number; currency: string };
@@ -119,17 +120,17 @@ export function Phase10CustomerPortal() {
           <div className="brand-mark">P10</div>
           <div>
             <h1>HRM AI Ops</h1>
-            <span>Customer Portal</span>
+            <span>{pt('Customer Portal')}</span>
           </div>
         </div>
         <button onClick={() => navigate('/customer-portal')}>
-          <Headphones size={16} /> Customer Portal
+          <Headphones size={16} /> {pt('Customer Portal')}
         </button>
         <button onClick={() => navigate('/billing-dashboard')}>
-          <BadgeDollarSign size={16} /> Billing
+          <BadgeDollarSign size={16} /> {pt('Billing')}
         </button>
         <button onClick={() => navigate('/sla-dashboard')}>
-          <Gauge size={16} /> SLA
+          <Gauge size={16} /> {pt('SLA')}
         </button>
       </aside>
 
@@ -137,10 +138,10 @@ export function Phase10CustomerPortal() {
         <header className="topbar">
           <div>
             <p>Phase 10</p>
-            <h2>{route.startsWith('/billing-dashboard') ? 'Billing & Subscription' : route.startsWith('/sla-dashboard') ? 'SLA Dashboard' : 'Customer Portal'}</h2>
+            <h2>{route.startsWith('/billing-dashboard') ? pt('Billing & Subscription') : route.startsWith('/sla-dashboard') ? pt('SLA Dashboard') : pt('Customer Portal')}</h2>
           </div>
           <span className={`status ${loadState === 'api' ? 'ok' : 'idle'}`}>
-            {loadState === 'loading' ? 'Loading API' : loadState === 'api' ? 'API connected' : 'Local mock mode'}
+            {loadState === 'loading' ? pt('Loading API') : loadState === 'api' ? pt('API connected') : pt('Local mock mode')}
           </span>
         </header>
 
@@ -167,14 +168,14 @@ function PortalView({ summary }: { summary: PortalSummary }) {
     <>
       <MetricGrid summary={summary} />
       <section className="content-grid two">
-        <Panel title="Subscription" icon={<ClipboardList size={18} />}>
+        <Panel title={pt('Subscription')} icon={<ClipboardList size={18} />}>
           <div className="phase7-summary">
-            <strong>{summary.plan?.name ?? 'No active plan'}</strong>
+            <strong>{summary.plan?.name ?? pt('No active plan')}</strong>
             <span>{summary.subscription?.subscriptionNo} / {summary.subscription?.status} / {summary.subscription?.billingCycle}</span>
             <span>Modules: {summary.plan?.enabledModulesCsv}</span>
           </div>
         </Panel>
-        <Panel title="Latest Tickets" icon={<LifeBuoy size={18} />}>
+        <Panel title={pt('Latest Tickets')} icon={<LifeBuoy size={18} />}>
           <TicketList tickets={summary.latestTickets} />
         </Panel>
       </section>
@@ -188,7 +189,7 @@ function PortalView({ summary }: { summary: PortalSummary }) {
 function BillingView({ summary }: { summary: PortalSummary }) {
   return (
     <section className="content-grid two">
-      <Panel title="Billing Drafts" icon={<ReceiptText size={18} />}>
+      <Panel title={pt('Billing Drafts')} icon={<ReceiptText size={18} />}>
         <div className="action-list">
           {summary.billingDrafts.map((draft) => (
             <div className="list-row" key={draft.id}>
@@ -202,7 +203,7 @@ function BillingView({ summary }: { summary: PortalSummary }) {
           ))}
         </div>
       </Panel>
-      <Panel title="Invoice Drafts" icon={<FileText size={18} />}>
+      <Panel title={pt('Invoice Drafts')} icon={<FileText size={18} />}>
         <div className="action-list">
           {summary.invoiceDrafts.map((invoice) => (
             <div className="list-row" key={invoice.id}>
@@ -216,12 +217,12 @@ function BillingView({ summary }: { summary: PortalSummary }) {
           ))}
         </div>
       </Panel>
-      <Panel title="Usage Quotas" icon={<BarChart3 size={18} />}>
+      <Panel title={pt('Usage Quotas')} icon={<BarChart3 size={18} />}>
         <QuotaPanel quotas={summary.quotas} />
       </Panel>
-      <Panel title="Payment Tracking" icon={<BadgeDollarSign size={18} />}>
+      <Panel title={pt('Payment Tracking')} icon={<BadgeDollarSign size={18} />}>
         <div className="phase7-summary">
-          <strong>Draft only</strong>
+          <strong>{pt('Draft only')}</strong>
           <span>Phase 10 records payment status references only. No card or sensitive banking data is stored.</span>
         </div>
       </Panel>
@@ -232,23 +233,23 @@ function BillingView({ summary }: { summary: PortalSummary }) {
 function SlaView({ summary }: { summary: PortalSummary }) {
   return (
     <section className="content-grid two">
-      <Panel title="SLA Summary" icon={<Gauge size={18} />}>
+      <Panel title={pt('SLA Summary')} icon={<Gauge size={18} />}>
         <div className="phase7-summary">
           <strong>{summary.slaBreached} breached / {summary.openTickets} open</strong>
           <span>Response target: {summary.plan?.slaResponseHours}h</span>
           <span>Resolution target: {summary.plan?.slaResolutionHours}h</span>
         </div>
       </Panel>
-      <Panel title="Customer Service Report" icon={<FileText size={18} />}>
+      <Panel title={pt('Customer Service Report')} icon={<FileText size={18} />}>
         {summary.latestServiceReport ? (
           <div className="phase7-summary">
             <strong>{summary.latestServiceReport.reportNo} / Health {summary.latestServiceReport.healthScore}</strong>
             <span>{summary.latestServiceReport.summary}</span>
             <span>Issues {summary.latestServiceReport.issueCount}, releases {summary.latestServiceReport.releaseCount}, AI runs {summary.latestServiceReport.aiRunCount}</span>
           </div>
-        ) : <p className="empty">No service report yet.</p>}
+        ) : <p className="empty">{pt('No service report yet.')}</p>}
       </Panel>
-      <Panel title="Ticket SLA Detail" icon={<LifeBuoy size={18} />}>
+      <Panel title={pt('Ticket SLA Detail')} icon={<LifeBuoy size={18} />}>
         <TicketList tickets={summary.latestTickets} />
       </Panel>
     </section>
@@ -257,14 +258,14 @@ function SlaView({ summary }: { summary: PortalSummary }) {
 
 function MetricGrid({ summary }: { summary: PortalSummary }) {
   const metrics = [
-    ['Open tickets', summary.openTickets],
-    ['SLA breached', summary.slaBreached],
-    ['Projects quota', `${quotaOf(summary, 'Project')}`],
-    ['Connectors quota', `${quotaOf(summary, 'Connector')}`],
-    ['AI runs quota', `${quotaOf(summary, 'AiRun')}`],
-    ['Tickets quota', `${quotaOf(summary, 'Ticket')}`],
-    ['Health score', summary.latestServiceReport?.healthScore ?? 0],
-    ['Invoice drafts', summary.invoiceDrafts.length]
+    [pt('Open tickets'), summary.openTickets],
+    [pt('SLA breached'), summary.slaBreached],
+    [pt('Projects quota'), `${quotaOf(summary, 'Project')}`],
+    [pt('Connectors quota'), `${quotaOf(summary, 'Connector')}`],
+    [pt('AI runs quota'), `${quotaOf(summary, 'AiRun')}`],
+    [pt('Tickets quota'), `${quotaOf(summary, 'Ticket')}`],
+    [pt('Health score'), summary.latestServiceReport?.healthScore ?? 0],
+    [pt('Invoice drafts'), summary.invoiceDrafts.length]
   ];
   return (
     <section className="metric-grid phase7-metrics">
@@ -280,7 +281,7 @@ function MetricGrid({ summary }: { summary: PortalSummary }) {
 }
 
 function TicketList({ tickets }: { tickets: PortalTicket[] }) {
-  if (tickets.length === 0) return <p className="empty">No customer tickets.</p>;
+  if (tickets.length === 0) return <p className="empty">{pt('No customer tickets.')}</p>;
   return (
     <div className="action-list">
       {tickets.map((ticket) => (

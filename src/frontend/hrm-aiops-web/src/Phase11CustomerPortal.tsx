@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
+import { pt } from './phaseI18n';
 
 type LoadState = 'loading' | 'api' | 'mock';
 
@@ -152,12 +153,12 @@ export function Phase11CustomerPortal() {
           <div className="brand-mark">P11</div>
           <div>
             <h1>HRM AI Ops</h1>
-            <span>Portal Enhancement</span>
+            <span>{pt('Portal Enhancement')}</span>
           </div>
         </div>
         {navItems.map((item) => (
           <button key={item.route} onClick={() => navigate(item.route)}>
-            {item.icon} {item.label}
+            {item.icon} {pt(item.label)}
           </button>
         ))}
       </aside>
@@ -166,10 +167,10 @@ export function Phase11CustomerPortal() {
         <header className="topbar">
           <div>
             <p>Phase 11</p>
-            <h2>{title}</h2>
+            <h2>{pt(title)}</h2>
           </div>
           <span className={`status ${loadState === 'api' ? 'ok' : 'idle'}`}>
-            {loadState === 'loading' ? 'Loading API' : loadState === 'api' ? 'API connected' : 'Local mock mode'}
+            {loadState === 'loading' ? pt('Loading API') : loadState === 'api' ? pt('API connected') : pt('Local mock mode')}
           </span>
         </header>
 
@@ -214,20 +215,20 @@ function DashboardView({ state }: { state: PortalState }) {
   return (
     <>
       <section className="metric-grid phase7-metrics">
-        <Metric label="Open tickets" value={dashboard.openTickets} />
-        <Metric label="Pending requests" value={dashboard.pendingRequests} />
-        <Metric label="Pending approvals" value={dashboard.pendingApprovals} />
-        <Metric label="Unread notifications" value={dashboard.unreadNotifications} />
-        <Metric label="Shared documents" value={dashboard.sharedDocuments} />
-        <Metric label="Knowledge" value={dashboard.knowledgeArticles} />
-        <Metric label="Training" value={dashboard.trainingSections} />
-        <Metric label="Health" value={dashboard.customerPortalSummary?.latestServiceReport?.healthScore ?? 0} />
+        <Metric label={pt('Open tickets')} value={dashboard.openTickets} />
+        <Metric label={pt('Pending requests')} value={dashboard.pendingRequests} />
+        <Metric label={pt('Pending approvals')} value={dashboard.pendingApprovals} />
+        <Metric label={pt('Unread notifications')} value={dashboard.unreadNotifications} />
+        <Metric label={pt('Shared documents')} value={dashboard.sharedDocuments} />
+        <Metric label={pt('Knowledge')} value={dashboard.knowledgeArticles} />
+        <Metric label={pt('Training')} value={dashboard.trainingSections} />
+        <Metric label={pt('Health')} value={dashboard.customerPortalSummary?.latestServiceReport?.healthScore ?? 0} />
       </section>
       <section className="content-grid two">
-        <Panel title="Latest Requests" icon={<MessageSquare size={18} />}>
+        <Panel title={pt('Latest Requests')} icon={<MessageSquare size={18} />}>
           <Rows items={dashboard.latestRequests ?? []} primary="title" secondary="status" />
         </Panel>
-        <Panel title="Latest Notifications" icon={<Bell size={18} />}>
+        <Panel title={pt('Latest Notifications')} icon={<Bell size={18} />}>
           <Rows items={dashboard.latestNotifications ?? []} primary="title" secondary="status" />
         </Panel>
       </section>
@@ -236,55 +237,55 @@ function DashboardView({ state }: { state: PortalState }) {
 }
 
 function ProjectsView({ state }: { state: PortalState }) {
-  return <Panel title="Project Workspace Access" icon={<FolderKanban size={18} />}><Rows items={state.projects.map((x) => ({ ...x.project, status: `${x.openRequests} requests / ${x.sharedDocuments} docs / ${x.pendingApprovals} approvals` }))} primary="name" secondary="status" /></Panel>;
+  return <Panel title={pt('Project Workspace Access')} icon={<FolderKanban size={18} />}><Rows items={state.projects.map((x) => ({ ...x.project, status: `${x.openRequests} requests / ${x.sharedDocuments} docs / ${x.pendingApprovals} approvals` }))} primary="name" secondary="status" /></Panel>;
 }
 
 function RequestsView({ state, onCreate }: { state: PortalState; onCreate: () => void }) {
-  return <Panel title="Portal Requests" icon={<MessageSquare size={18} />} action={<button onClick={onCreate}>Create Sample</button>}><Rows items={state.requests} primary="title" secondary="status" /></Panel>;
+  return <Panel title={pt('Portal Requests')} icon={<MessageSquare size={18} />} action={<button onClick={onCreate}>{pt('Create Sample')}</button>}><Rows items={state.requests} primary="title" secondary="status" /></Panel>;
 }
 
 function RequirementView({ state }: { state: PortalState }) {
-  return <Panel title="Requirement Intake" icon={<ClipboardCheck size={18} />}><Rows items={state.workspace.requirementIntakes ?? []} primary="title" secondary="status" /></Panel>;
+  return <Panel title={pt('Requirement Intake')} icon={<ClipboardCheck size={18} />}><Rows items={state.workspace.requirementIntakes ?? []} primary="title" secondary="status" /></Panel>;
 }
 
 function DocumentsView({ state }: { state: PortalState }) {
-  return <Panel title="Shared Documents" icon={<FileText size={18} />}><Rows items={state.documents.map((x) => ({ id: x.share.id, title: x.title, status: `${x.share.documentType} v${x.share.documentVersion} / ${x.documentStatus}` }))} primary="title" secondary="status" /></Panel>;
+  return <Panel title={pt('Shared Documents')} icon={<FileText size={18} />}><Rows items={state.documents.map((x) => ({ id: x.share.id, title: x.title, status: `${x.share.documentType} v${x.share.documentVersion} / ${x.documentStatus}` }))} primary="title" secondary="status" /></Panel>;
 }
 
 function ApprovalsView({ state, onApprove }: { state: PortalState; onApprove: () => void }) {
-  return <Panel title="Approval Center" icon={<CheckCircle2 size={18} />} action={<button onClick={onApprove}>Approve First</button>}><Rows items={state.approvals.map((x) => ({ ...x, title: `${x.approvalType} / ${x.sourceEntityType}` }))} primary="title" secondary="status" /></Panel>;
+  return <Panel title={pt('Approval Center')} icon={<CheckCircle2 size={18} />} action={<button onClick={onApprove}>{pt('Approve First')}</button>}><Rows items={state.approvals.map((x) => ({ ...x, title: `${x.approvalType} / ${x.sourceEntityType}` }))} primary="title" secondary="status" /></Panel>;
 }
 
 function SlaView({ state }: { state: PortalState }) {
-  return <Panel title="SLA Center" icon={<Gauge size={18} />}><Rows items={state.sla.tickets ?? []} primary="title" secondary="slaStatus" /></Panel>;
+  return <Panel title={pt('SLA Center')} icon={<Gauge size={18} />}><Rows items={state.sla.tickets ?? []} primary="title" secondary="slaStatus" /></Panel>;
 }
 
 function KnowledgeView({ state }: { state: PortalState }) {
-  return <Panel title="Knowledge Base" icon={<BookOpen size={18} />}><Rows items={state.knowledge} primary="title" secondary="category" /></Panel>;
+  return <Panel title={pt('Knowledge Base')} icon={<BookOpen size={18} />}><Rows items={state.knowledge} primary="title" secondary="category" /></Panel>;
 }
 
 function TrainingView({ state }: { state: PortalState }) {
-  return <Panel title="Training Center" icon={<GraduationCap size={18} />}><Rows items={state.training} primary="title" secondary="moduleName" /></Panel>;
+  return <Panel title={pt('Training Center')} icon={<GraduationCap size={18} />}><Rows items={state.training} primary="title" secondary="moduleName" /></Panel>;
 }
 
 function AiChatView({ state, onAsk }: { state: PortalState; onAsk: () => void }) {
-  return <Panel title="Portal AI Chat" icon={<Bot size={18} />} action={<button onClick={onAsk}>Ask Sample</button>}><Rows items={state.chat.messages ?? []} primary="message" secondary="senderType" /></Panel>;
+  return <Panel title={pt('Portal AI Chat')} icon={<Bot size={18} />} action={<button onClick={onAsk}>{pt('Ask Sample')}</button>}><Rows items={state.chat.messages ?? []} primary="message" secondary="senderType" /></Panel>;
 }
 
 function NotificationsView({ state, onRead }: { state: PortalState; onRead: () => void }) {
-  return <Panel title="Notifications" icon={<Bell size={18} />} action={<button onClick={onRead}>Mark First Read</button>}><Rows items={state.notifications} primary="title" secondary="status" /></Panel>;
+  return <Panel title={pt('Notifications')} icon={<Bell size={18} />} action={<button onClick={onRead}>{pt('Mark First Read')}</button>}><Rows items={state.notifications} primary="title" secondary="status" /></Panel>;
 }
 
 function ReportsView({ state }: { state: PortalState }) {
-  return <Panel title="Service Reports" icon={<FileText size={18} />}><Rows items={state.reports.map((x) => ({ ...x, title: x.reportNo, status: `Health ${x.healthScore} / SLA breached ${x.slaBreachedCount}` }))} primary="title" secondary="status" /></Panel>;
+  return <Panel title={pt('Service Reports')} icon={<FileText size={18} />}><Rows items={state.reports.map((x) => ({ ...x, title: x.reportNo, status: `Health ${x.healthScore} / SLA breached ${x.slaBreachedCount}` }))} primary="title" secondary="status" /></Panel>;
 }
 
 function BillingView({ state }: { state: PortalState }) {
-  return <section className="content-grid two"><Panel title="Invoice Drafts" icon={<ReceiptText size={18} />}><Rows items={state.billing.invoiceDrafts ?? []} primary="invoiceNo" secondary="status" /></Panel><Panel title="Billing Drafts" icon={<ReceiptText size={18} />}><Rows items={state.billing.billingDrafts ?? []} primary="billingDraftNo" secondary="status" /></Panel></section>;
+  return <section className="content-grid two"><Panel title={pt('Invoice Drafts')} icon={<ReceiptText size={18} />}><Rows items={state.billing.invoiceDrafts ?? []} primary="invoiceNo" secondary="status" /></Panel><Panel title={pt('Billing Drafts')} icon={<ReceiptText size={18} />}><Rows items={state.billing.billingDrafts ?? []} primary="billingDraftNo" secondary="status" /></Panel></section>;
 }
 
 function UsersView({ state }: { state: PortalState }) {
-  return <Panel title="Portal User Management" icon={<Users size={18} />}><Rows items={state.users.map((x) => ({ ...x, status: `${x.roleKey} / billing ${x.canViewBilling ? 'yes' : 'no'} / reports ${x.canViewReports ? 'yes' : 'no'}` }))} primary="displayName" secondary="status" /></Panel>;
+  return <Panel title={pt('Portal User Management')} icon={<Users size={18} />}><Rows items={state.users.map((x) => ({ ...x, status: `${x.roleKey} / billing ${x.canViewBilling ? 'yes' : 'no'} / reports ${x.canViewReports ? 'yes' : 'no'}` }))} primary="displayName" secondary="status" /></Panel>;
 }
 
 function Metric({ label, value }: { label: string; value: any }) {
@@ -296,7 +297,7 @@ function Panel({ title, icon, action, children }: { title: string; icon: React.R
 }
 
 function Rows({ items, primary, secondary }: { items: any[]; primary: string; secondary: string }) {
-  if (!items?.length) return <p className="empty">No portal data.</p>;
+  if (!items?.length) return <p className="empty">{pt('No portal data.')}</p>;
   return <div className="action-list">{items.map((item, index) => <div className="list-row" key={item.id ?? index}><div><strong>{item[primary] ?? item.title ?? item.name}</strong><span>{item[secondary] ?? item.status}</span><small>{item.requestNo ?? item.ticketNo ?? item.createdAt ?? ''}</small></div><StatusBadge text={String(item.status ?? item[secondary] ?? 'Active')} /></div>)}</div>;
 }
 

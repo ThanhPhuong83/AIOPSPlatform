@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { api } from './api';
+import { pt } from './phaseI18n';
 
 type KnowledgeStatus = 'Draft' | 'PendingReview' | 'Approved' | 'Rejected' | 'Superseded' | 'Expired';
 type RiskLevel = 'Low' | 'Medium' | 'High' | 'Critical';
@@ -195,14 +196,14 @@ export function Phase8GovernanceAnalytics() {
           <div className="brand-mark">P8</div>
           <div>
             <h1>HRM AI Ops</h1>
-            <span>Learning & Governance</span>
+            <span>{pt('Learning & Governance')}</span>
           </div>
         </div>
         <button onClick={() => navigate('/governance-analytics')}>
-          <BarChart3 size={16} /> Governance Analytics
+          <BarChart3 size={16} /> {pt('Governance Analytics')}
         </button>
         <button onClick={() => navigate('/knowledge-learning')}>
-          <BrainCircuit size={16} /> Knowledge Learning
+          <BrainCircuit size={16} /> {pt('Knowledge Learning')}
         </button>
       </aside>
 
@@ -210,28 +211,28 @@ export function Phase8GovernanceAnalytics() {
         <header className="topbar">
           <div>
             <p>Phase 8</p>
-            <h2>{route.startsWith('/knowledge-learning') ? 'Knowledge Learning' : 'Governance Analytics'}</h2>
+            <h2>{route.startsWith('/knowledge-learning') ? pt('Knowledge Learning') : pt('Governance Analytics')}</h2>
           </div>
           <span className={`status ${loadState === 'api' ? 'ok' : 'idle'}`}>
-            {loadState === 'loading' ? 'Loading API' : loadState === 'api' ? 'API connected' : 'Local mock mode'}
+            {loadState === 'loading' ? pt('Loading API') : loadState === 'api' ? pt('API connected') : pt('Local mock mode')}
           </span>
         </header>
 
         <section className="panel">
           <header>
             <Search size={18} />
-            <h3>Analytics Filters</h3>
+            <h3>{pt('Analytics Filters')}</h3>
           </header>
           <div className="compact-form phase7-filter-grid">
-            <input value={moduleFilter} onChange={(event) => setModuleFilter(event.target.value)} placeholder="Module, e.g. Leave Management" />
+            <input value={moduleFilter} onChange={(event) => setModuleFilter(event.target.value)} placeholder={pt('Module, e.g. Leave Management')} />
             <button onClick={() => load(moduleFilter)}>
-              <Search size={15} /> Apply Filter
+              <Search size={15} /> {pt('Apply Filter')}
             </button>
             <button onClick={recalculate}>
-              <RefreshCw size={15} /> Recalculate Scores
+              <RefreshCw size={15} /> {pt('Recalculate Scores')}
             </button>
             <button className="primary" onClick={generateLearning}>
-              <BrainCircuit size={15} /> Generate Learning
+              <BrainCircuit size={15} /> {pt('Generate Learning')}
             </button>
           </div>
         </section>
@@ -248,12 +249,12 @@ export function Phase8GovernanceAnalytics() {
 
 function GovernanceAnalyticsView({ analytics }: { analytics: AnalyticsPayload }) {
   const metrics = [
-    ['Total issues', analytics.summary.totalIssues],
-    ['Open issues', analytics.summary.openIssues],
-    ['Approved knowledge', analytics.summary.approvedKnowledge],
-    ['Pending knowledge', analytics.summary.pendingKnowledge],
-    ['Repeated patterns', analytics.summary.repeatedPatterns],
-    ['Score snapshots', analytics.summary.scoreCount]
+    [pt('Total issues'), analytics.summary.totalIssues],
+    [pt('Open issues'), analytics.summary.openIssues],
+    [pt('Approved knowledge'), analytics.summary.approvedKnowledge],
+    [pt('Pending knowledge'), analytics.summary.pendingKnowledge],
+    [pt('Repeated patterns'), analytics.summary.repeatedPatterns],
+    [pt('Score snapshots'), analytics.summary.scoreCount]
   ];
 
   return (
@@ -269,7 +270,7 @@ function GovernanceAnalyticsView({ analytics }: { analytics: AnalyticsPayload })
       </section>
 
       <section className="content-grid two">
-        <Panel title="Governance Scores" icon={<BarChart3 size={18} />}>
+        <Panel title={pt('Governance Scores')} icon={<BarChart3 size={18} />}>
           <div className="action-list">
             {analytics.scores.map((score) => (
               <div className="list-row" key={score.id}>
@@ -284,7 +285,7 @@ function GovernanceAnalyticsView({ analytics }: { analytics: AnalyticsPayload })
           </div>
         </Panel>
 
-        <Panel title="Repeated Issue Patterns" icon={<RefreshCw size={18} />}>
+        <Panel title={pt('Repeated Issue Patterns')} icon={<RefreshCw size={18} />}>
           <div className="action-list">
             {analytics.repeatedIssuePatterns.map((pattern) => (
               <div className="list-row" key={pattern.id}>
@@ -301,7 +302,7 @@ function GovernanceAnalyticsView({ analytics }: { analytics: AnalyticsPayload })
       </section>
 
       <section className="content-grid two">
-        <Panel title="Governance Insights" icon={<Lightbulb size={18} />}>
+        <Panel title={pt('Governance Insights')} icon={<Lightbulb size={18} />}>
           <div className="action-list">
             {analytics.insights.map((insight) => (
               <div className="list-row" key={insight.id}>
@@ -316,7 +317,7 @@ function GovernanceAnalyticsView({ analytics }: { analytics: AnalyticsPayload })
           </div>
         </Panel>
 
-        <Panel title="AI Performance Quality" icon={<BrainCircuit size={18} />}>
+        <Panel title={pt('AI Performance Quality')} icon={<BrainCircuit size={18} />}>
           {analytics.aiPerformance ? (
             <div className="phase7-summary">
               <strong>{analytics.aiPerformance.qualityScore.toFixed(1)}</strong>
@@ -325,7 +326,7 @@ function GovernanceAnalyticsView({ analytics }: { analytics: AnalyticsPayload })
               <small>{analytics.aiPerformance.formula}</small>
             </div>
           ) : (
-            <p className="empty">No AI performance metric yet.</p>
+            <p className="empty">{pt('No AI performance metric yet.')}</p>
           )}
         </Panel>
       </section>
@@ -336,7 +337,7 @@ function GovernanceAnalyticsView({ analytics }: { analytics: AnalyticsPayload })
 function KnowledgeLearningView({ items, onApprove, onReject }: { items: KnowledgeLearningItem[]; onApprove: (item: KnowledgeLearningItem) => void; onReject: (item: KnowledgeLearningItem) => void }) {
   return (
     <section className="content-grid">
-      <Panel title="Knowledge Learning Items" icon={<FileText size={18} />}>
+      <Panel title={pt('Knowledge Learning Items')} icon={<FileText size={18} />}>
         <div className="action-list">
           {items.map((item) => (
             <div className="list-row" key={item.id}>
@@ -352,10 +353,10 @@ function KnowledgeLearningView({ items, onApprove, onReject }: { items: Knowledg
               </div>
               <div className="row-actions">
                 <button disabled={item.status === 'Approved'} onClick={() => onApprove(item)}>
-                  <CheckCircle2 size={15} /> Approve
+                  <CheckCircle2 size={15} /> {pt('Approve')}
                 </button>
                 <button disabled={item.status === 'Rejected'} onClick={() => onReject(item)}>
-                  <XCircle size={15} /> Reject
+                  <XCircle size={15} /> {pt('Reject')}
                 </button>
               </div>
             </div>
